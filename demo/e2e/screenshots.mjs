@@ -1,4 +1,4 @@
-// Regenerates the README screenshots and GIF from the running demo app.
+// Regenerates the README screenshots, GIF and MP4 from the running demo app (needs ffmpeg).
 //   DEMO_URL=http://127.0.0.1:8000 node screenshots.mjs
 import { chromium } from '@playwright/test'
 import { execFileSync } from 'node:child_process'
@@ -32,15 +32,17 @@ async function newPage({ dark = false, video = false } = {}) {
 }
 
 const bar = (page) => page.locator('[data-unsaved-changes-bar] [role="status"]')
+const leaveModal = (page) => page.locator('.fi-modal-window').filter({ hasText: 'Leave without saving?' })
+const sidebarLink = (page, name) => page.locator('.fi-sidebar').getByRole('link', { name })
 
-async function openPost(page) {
-    await page.goto(`${base}/admin/posts`)
+async function openPost(page, panel = 'admin') {
+    await page.goto(`${base}/${panel}/posts`)
     await page.getByRole('link', { name: 'Introducing our autumn roast' }).first().click()
     await page.waitForURL('**/edit')
     await page.waitForTimeout(1000)
 }
 
-// 1. Light mode, bar visible.
+// 1. Light mode: the bar, a close-up, and the leave modal.
 {
     const page = await newPage()
     await openPost(page)
@@ -50,14 +52,15 @@ async function openPost(page) {
     await page.screenshot({ path: join(out, 'bar-light.png') })
     await bar(page).screenshot({ path: join(out, 'bar-closeup.png') })
 
-    // 2. Blocked SPA navigation: the bar shakes and is highlighted.
-    await page.locator('.fi-sidebar').getByRole('link', { name: 'Store settings' }).click()
-    await page.waitForTimeout(250)
-    await page.screenshot({ path: join(out, 'bar-navigation-blocked.png') })
+    await sidebarLink(page, 'Store settings').click()
+    await leaveModal(page).waitFor()
+    await page.waitForTimeout(400)
+    await page.screenshot({ path: join(out, 'leave-modal.png') })
+    await leaveModal(page).getByRole('button', { name: 'Keep editing' }).click()
     await page.context().close()
 }
 
-// 3. Dark mode.
+// 2. Dark mode.
 {
     const page = await newPage({ dark: true })
     await openPost(page)
@@ -68,7 +71,7 @@ async function openPost(page) {
     await page.context().close()
 }
 
-// 4. Custom settings page.
+// 3. Custom settings page.
 {
     const page = await newPage()
     await page.goto(`${base}/admin/store-settings`)
@@ -81,13 +84,27 @@ async function openPost(page) {
     await page.context().close()
 }
 
-// 5. Animated walkthrough: edit → bar → discard → edit → save.
+// 4. Second panel: its own configuration (top, success/danger buttons, shake guard, indigo theme).
+{
+    const page = await newPage()
+    await openPost(page, 'manager')
+    await page.getByLabel('Title').fill('Edited in the manager panel')
+    await bar(page).waitFor()
+    await page.waitForTimeout(400)
+    await page.screenshot({ path: join(out, 'multi-panel.png') })
+    await sidebarLink(page, 'Dashboard').click()
+    await page.waitForTimeout(250)
+    await page.screenshot({ path: join(out, 'bar-navigation-shake.png') })
+    await bar(page).getByRole('button', { name: 'Discard' }).click()
+    await page.context().close()
+}
+
+// 5. Walkthrough video: edit → discard → edit → click away → modal → Save & leave.
 {
     rmSync(videoDir, { recursive: true, force: true })
     const page = await newPage({ video: true })
     await openPost(page)
     const title = page.getByLabel('Title')
-    const original = await title.inputValue()
     await title.click()
     await page.keyboard.press('End')
     await page.keyboard.type(' — limited batch', { delay: 60 })
@@ -99,26 +116,36 @@ async function openPost(page) {
     await page.getByLabel('Slug').click()
     await page.keyboard.press('End')
     await page.keyboard.type('-2026', { delay: 60 })
-    await page.waitForTimeout(800)
-    await page.locator('.fi-sidebar').getByRole('link', { name: 'Store settings' }).click()
-    await page.waitForTimeout(1200)
-    await bar(page).getByRole('button', { name: 'Save' }).click()
+    await page.waitForTimeout(1000)
+    await sidebarLink(page, 'Store settings').hover()
+    await page.waitForTimeout(300)
+    await sidebarLink(page, 'Store settings').click()
+    await leaveModal(page).waitFor()
+    await page.waitForTimeout(1500)
+    await leaveModal(page).getByRole('button', { name: 'Save & leave' }).hover()
+    await page.waitForTimeout(400)
+    await leaveModal(page).getByRole('button', { name: 'Save & leave' }).click()
+    await page.waitForURL('**/store-settings')
     await page.waitForTimeout(1800)
     // Restore the seed value so reruns are stable.
-    await page.getByLabel('Slug').fill(original ? 'introducing-our-autumn-roast' : '')
+    await openPost(page)
+    await page.getByLabel('Slug').fill('introducing-our-autumn-roast')
     await bar(page).getByRole('button', { name: 'Save' }).click()
     await page.waitForTimeout(500)
+    const video = page.video()
     await page.context().close()
+    const source = await video.path()
 
-    const [video] = readdirSync(videoDir).filter((f) => f.endsWith('.webm'))
-    // Trim the login redirect off the start, then build a palette-optimised GIF.
-    execFileSync('ffmpeg', [
-        '-y', '-loglevel', 'error', '-ss', '2.5', '-i', join(videoDir, video),
+    // Trim the login redirect at the start and the restore step at the end.
+    const trim = ['-ss', '2.5', '-t', '15.5']
+    execFileSync('ffmpeg', ['-y', '-loglevel', 'error', ...trim, '-i', source,
         '-vf', 'fps=12,scale=960:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=128[p];[b][p]paletteuse=dither=bayer',
-        join(out, 'demo.gif'),
-    ])
+        join(out, 'demo.gif')])
+    execFileSync('ffmpeg', ['-y', '-loglevel', 'error', ...trim, '-i', source,
+        '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '23', '-preset', 'slow', '-movflags', '+faststart', '-an',
+        join(out, 'demo.mp4')])
     rmSync(videoDir, { recursive: true, force: true })
 }
 
 await browser.close()
-console.log(`Screenshots written to ${out}`)
+console.log(`Screenshots and videos written to ${out}`)

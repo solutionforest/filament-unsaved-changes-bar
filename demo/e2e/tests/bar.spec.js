@@ -56,7 +56,10 @@ test('discard restores the saved values and hides the bar', async ({ page }) => 
     await expect(title).toHaveValue(original)
 })
 
-test('SPA navigation while dirty is blocked and the bar shakes', async ({ page }) => {
+const leaveModal = (page) => page.locator('.fi-modal-window').filter({ hasText: 'Leave without saving?' })
+const sidebarLink = (page, name) => page.locator('.fi-sidebar').getByRole('link', { name })
+
+test('leave modal: SPA navigation while dirty opens the modal, Keep editing stays', async ({ page }) => {
     await openFirstPost(page)
     const url = page.url()
     let dialogs = 0
@@ -68,11 +71,75 @@ test('SPA navigation while dirty is blocked and the bar shakes', async ({ page }
     await page.getByLabel('Title').fill('Dirty')
     await expectVisible(page)
 
-    await page.locator('.fi-sidebar').getByRole('link', { name: 'Store settings' }).click()
+    await sidebarLink(page, 'Store settings').click()
+    await expect(leaveModal(page)).toBeVisible()
+    await expect(leaveModal(page)).toContainText('You have unsaved changes on this page.')
+
+    await leaveModal(page).getByRole('button', { name: 'Keep editing' }).click()
+    await expect(leaveModal(page)).toBeHidden()
+    expect(page.url()).toBe(url)
+    await expect(page.getByLabel('Title')).toHaveValue('Dirty')
+    await expectVisible(page)
+    expect(dialogs).toBe(0) // no native confirm() on top of the modal
+})
+
+test('leave modal: Discard & leave navigates without saving', async ({ page }) => {
+    await openFirstPost(page)
+    const title = page.getByLabel('Title')
+    const original = await title.inputValue()
+    const editUrl = page.url()
+
+    await title.fill('Thrown away')
+    await sidebarLink(page, 'Store settings').click()
+    await leaveModal(page).getByRole('button', { name: 'Discard & leave' }).click()
+    await page.waitForURL('**/store-settings')
+
+    await page.goto(editUrl)
+    await expect(page.getByLabel('Title')).toHaveValue(original)
+})
+
+test('leave modal: Save & leave saves, then navigates', async ({ page }) => {
+    await openFirstPost(page)
+    const editUrl = page.url()
+    const slug = 'saved-and-left-' + Date.now()
+
+    await page.getByLabel('Slug').fill(slug)
+    await sidebarLink(page, 'Store settings').click()
+    await leaveModal(page).getByRole('button', { name: 'Save & leave' }).click()
+    await page.waitForURL('**/store-settings')
+
+    await page.goto(editUrl)
+    await expect(page.getByLabel('Slug')).toHaveValue(slug)
+})
+
+test('leave modal: Save & leave with a validation error stays on the page', async ({ page }) => {
+    await openFirstPost(page)
+    const url = page.url()
+
+    await page.getByLabel('Title').fill('')
+    await sidebarLink(page, 'Store settings').click()
+    await leaveModal(page).getByRole('button', { name: 'Save & leave' }).click()
+
+    await expect(page.getByText('The title field is required.')).toBeVisible()
+    await expect(leaveModal(page)).toBeHidden()
+    expect(page.url()).toBe(url)
+    await expectVisible(page)
+})
+
+test('shake mode (2nd panel): SPA navigation while dirty is blocked and the bar shakes', async ({ page }) => {
+    await page.goto('/manager/posts')
+    await page.getByRole('link', { name: 'Introducing our autumn roast' }).first().click()
+    await page.waitForURL('**/manager/posts/*/edit')
+    await page.waitForTimeout(800)
+    const url = page.url()
+
+    await page.getByLabel('Title').fill('Dirty')
+    await expectVisible(page)
+    await sidebarLink(page, 'Dashboard').click()
     await expect(bar(page)).toHaveClass(/fi-ucb-shake/)
     await page.waitForTimeout(500)
     expect(page.url()).toBe(url)
-    expect(dialogs).toBe(0)
+    await expect(page.locator('.fi-modal-window')).toHaveCount(0)
 })
 
 test('a full reload while dirty triggers the native beforeunload dialog', async ({ page }) => {
@@ -119,4 +186,23 @@ test('custom settings page: save and discard work', async ({ page }) => {
     await name.fill(original)
     await bar(page).getByRole('button', { name: 'Save' }).click()
     await expectHidden(page)
+})
+
+test('multi-panel: the /manager panel uses its own configuration', async ({ page }) => {
+    // Same Post resource, second panel: bar at the top, success/danger buttons, only on Edit (includePages).
+    await page.goto('/manager/posts')
+    await page.getByRole('link', { name: 'Introducing our autumn roast' }).first().click()
+    await page.waitForURL('**/manager/posts/*/edit')
+    await page.waitForTimeout(800)
+    await expectHidden(page)
+
+    await page.getByLabel('Title').fill('Edited in the manager panel')
+    await expectVisible(page)
+    await expect(bar(page)).toHaveClass(/fi-ucb-top/)
+    await expect(bar(page).getByRole('button', { name: 'Save' })).toHaveClass(/fi-color-success/)
+    await bar(page).getByRole('button', { name: 'Discard' }).click()
+    await expectHidden(page)
+
+    await page.goto('/manager/posts/create')
+    await expect(page.locator('[data-unsaved-changes-bar]')).toHaveCount(0)
 })
