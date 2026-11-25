@@ -250,7 +250,7 @@ composer analyse         # Larastan
 composer format          # Pint
 ```
 
-CI (`.github/workflows/tests.yml`) runs on self-hosted runners. It runs:
+CI (`.github/workflows/tests.yml`) runs on GitHub-hosted runners. It runs:
 
 - Pest on PHP 8.2–8.4,
 - Larastan and Pint, and
