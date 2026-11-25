@@ -1,9 +1,9 @@
 <?php
 
-namespace Workbench\App\Filament\Resources\PostResource\Pages;
+namespace Demo\App\Filament\Resources\PostResource\Pages;
 
+use Demo\App\Filament\Resources\PostResource;
 use Filament\Resources\Pages\ListRecords;
-use Workbench\App\Filament\Resources\PostResource;
 
 class ListPosts extends ListRecords
 {

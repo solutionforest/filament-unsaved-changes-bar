@@ -12,9 +12,21 @@ providers:
   - Filament\Tables\TablesServiceProvider
   - Filament\Widgets\WidgetsServiceProvider
   - SolutionForest\FilamentUnsavedChangesBar\UnsavedChangesBarServiceProvider
-  - Workbench\App\Providers\AdminPanelProvider
+  - Demo\App\Providers\AdminPanelProvider
+
+env:
+  - APP_NAME="Unsaved Changes Bar demo"
+  - APP_URL=http://127.0.0.1:8000
+  - AUTH_MODEL=Demo\App\Models\User
+  - DB_CONNECTION=sqlite
+  - FILESYSTEM_DISK=public
+
 migrations:
-  - workbench/database/migrations
+  - demo/database/migrations
+
+seeders:
+  - Demo\Database\Seeders\DatabaseSeeder
+
 workbench:
   start: /admin
   install: true
@@ -24,6 +36,15 @@ workbench:
     commands: false
     components: false
     views: false
-  build: []
-  assets: []
+  build:
+    - asset-publish
+    - create-sqlite-db
+    - db-wipe
+    - migrate-fresh:
+        --seed: true
+        --seeder: Demo\Database\Seeders\DatabaseSeeder
+    - storage-link:
+        --force: true
+  assets:
+    - laravel-assets
   sync: []

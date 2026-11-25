@@ -1,14 +1,14 @@
 <?php
 
+use Demo\App\Filament\Resources\PostResource\Pages\CreatePost;
+use Demo\App\Filament\Resources\PostResource\Pages\EditPost;
+use Demo\App\Filament\Resources\PostResource\Pages\ListPosts;
+use Demo\App\Models\Post;
 use Filament\Facades\Filament;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Foundation\Auth\User;
 use Livewire\Livewire;
 use SolutionForest\FilamentUnsavedChangesBar\UnsavedChangesBarPlugin;
-use Workbench\App\Filament\Resources\PostResource\Pages\CreatePost;
-use Workbench\App\Filament\Resources\PostResource\Pages\EditPost;
-use Workbench\App\Filament\Resources\PostResource\Pages\ListPosts;
-use Workbench\App\Models\Post;
 
 beforeEach(function () {
     Filament::setCurrentPanel('admin');

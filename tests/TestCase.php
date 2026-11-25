@@ -4,6 +4,7 @@ namespace SolutionForest\FilamentUnsavedChangesBar\Tests;
 
 use BladeUI\Heroicons\BladeHeroiconsServiceProvider;
 use BladeUI\Icons\BladeIconsServiceProvider;
+use Demo\App\Providers\AdminPanelProvider;
 use Filament\Actions\ActionsServiceProvider;
 use Filament\FilamentServiceProvider;
 use Filament\Forms\FormsServiceProvider;
@@ -16,7 +17,6 @@ use Filament\Widgets\WidgetsServiceProvider;
 use Livewire\LivewireServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
 use SolutionForest\FilamentUnsavedChangesBar\UnsavedChangesBarServiceProvider;
-use Workbench\App\Providers\AdminPanelProvider;
 
 abstract class TestCase extends Orchestra
 {
@@ -48,6 +48,6 @@ abstract class TestCase extends Orchestra
 
     protected function defineDatabaseMigrations(): void
     {
-        $this->loadMigrationsFrom(__DIR__.'/../workbench/database/migrations');
+        $this->loadMigrationsFrom(__DIR__.'/../demo/database/migrations');
     }
 }

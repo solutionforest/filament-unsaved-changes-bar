@@ -2,5 +2,5 @@ vendor
 composer.lock
 .phpunit.cache
 .phpunit.result.cache
-workbench/database/*.sqlite
+demo/database/*.sqlite
 build
