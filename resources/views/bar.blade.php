@@ -1,5 +1,7 @@
 @php
     use Filament\Support\Facades\FilamentAsset;
+
+    $modalId = 'unsaved-changes-bar-leave';
 @endphp
 
 <div
@@ -10,7 +12,8 @@
         saveMethod: @js($saveMethod),
         hasTrait: @js($hasTrait),
         hideFormActions: @js($hideFormActions),
-        guardNavigation: @js($guardNavigation),
+        navigationGuard: @js($navigationGuard),
+        modalId: @js($modalId),
         discardConfirm: @js(__('filament-unsaved-changes-bar::bar.discard_confirm')),
     })"
     class="fi-ucb-root"
@@ -23,20 +26,66 @@
         x-transition:enter-start="fi-ucb-enter-start"
         x-transition:leave="fi-ucb-leave"
         x-transition:leave-end="fi-ucb-enter-start"
-        :class="{ 'fi-ucb-shake': shaking }"
+        x-bind:class="{ 'fi-ucb-shake': shaking }"
         role="status"
         aria-live="polite"
         class="fi-ucb fi-ucb-{{ $position }}"
     >
-        <span class="fi-ucb-label">{{ __('filament-unsaved-changes-bar::bar.label') }}</span>
+        <span class="fi-ucb-label">
+            <x-filament::icon icon="heroicon-m-exclamation-circle" class="fi-ucb-icon" />
+            {{ __('filament-unsaved-changes-bar::bar.label') }}
+        </span>
 
-        <button type="button" class="fi-ucb-btn fi-ucb-btn-discard" x-on:click="discard()" x-bind:disabled="isSaving">
+        <x-filament::button
+            :color="$discardButtonColor"
+            outlined
+            size="sm"
+            class="fi-ucb-btn-discard"
+            x-on:click="discard()"
+            x-bind:disabled="isSaving"
+        >
             {{ __('filament-unsaved-changes-bar::bar.discard') }}
-        </button>
+        </x-filament::button>
 
-        <button type="button" class="fi-ucb-btn fi-ucb-btn-save" x-on:click="save()" x-bind:disabled="isSaving" x-bind:aria-busy="isSaving">
+        <x-filament::button
+            :color="$saveButtonColor"
+            size="sm"
+            class="fi-ucb-btn-save"
+            x-on:click="save()"
+            x-bind:disabled="isSaving"
+            x-bind:aria-busy="isSaving"
+        >
             <span x-show="! isSaving">{{ __('filament-unsaved-changes-bar::bar.save') }}</span>
             <span x-show="isSaving" x-cloak>{{ __('filament-unsaved-changes-bar::bar.saving') }}</span>
-        </button>
+        </x-filament::button>
     </div>
+
+    @if ($navigationGuard === 'modal')
+        {{-- Shown when an SPA link is clicked while the form is dirty. Lives in the bar's Alpine scope. --}}
+        <x-filament::modal
+            :id="$modalId"
+            icon="heroicon-o-exclamation-triangle"
+            icon-color="warning"
+            :heading="__('filament-unsaved-changes-bar::bar.leave_heading')"
+            :description="__('filament-unsaved-changes-bar::bar.leave_description')"
+            width="md"
+            :close-by-clicking-away="false"
+            footer-actions-alignment="end"
+        >
+            <x-slot name="footerActions">
+                <x-filament::button color="gray" outlined x-on:click="keepEditing()" x-bind:disabled="isSaving" class="fi-ucb-modal-keep">
+                    {{ __('filament-unsaved-changes-bar::bar.keep_editing') }}
+                </x-filament::button>
+
+                <x-filament::button :color="$discardButtonColor === 'gray' ? 'danger' : $discardButtonColor" outlined x-on:click="leaveWithoutSaving()" x-bind:disabled="isSaving" class="fi-ucb-modal-discard">
+                    {{ __('filament-unsaved-changes-bar::bar.discard_and_leave') }}
+                </x-filament::button>
+
+                <x-filament::button :color="$saveButtonColor" x-on:click="saveAndLeave()" x-bind:disabled="isSaving" class="fi-ucb-modal-save">
+                    <span x-show="! isSaving">{{ __('filament-unsaved-changes-bar::bar.save_and_leave') }}</span>
+                    <span x-show="isSaving" x-cloak>{{ __('filament-unsaved-changes-bar::bar.saving') }}</span>
+                </x-filament::button>
+            </x-slot>
+        </x-filament::modal>
+    @endif
 </div>

@@ -9,20 +9,27 @@ use Filament\Resources\Pages\EditRecord;
 use Filament\View\PanelsRenderHook;
 use ReflectionClass;
 use SolutionForest\FilamentUnsavedChangesBar\Concerns\HasUnsavedChangesBar;
+use SolutionForest\FilamentUnsavedChangesBar\Enums\BarPosition;
+use SolutionForest\FilamentUnsavedChangesBar\Enums\NavigationGuard;
+use SolutionForest\FilamentUnsavedChangesBar\Exceptions\ConflictingPageFilters;
 
 class UnsavedChangesBarPlugin implements Plugin
 {
-    protected string $position = 'bottom';
+    protected BarPosition $position = BarPosition::Bottom;
+
+    protected string $saveButtonColor = 'primary';
+
+    protected string $discardButtonColor = 'gray';
 
     protected bool $hideFormActionsWhenDirty = false;
 
-    protected bool $guardNavigation = true;
+    protected NavigationGuard $navigationGuard = NavigationGuard::Modal;
 
     /** @var array<class-string>|null */
-    protected ?array $pages = null;
+    protected ?array $includedPages = null;
 
-    /** @var array<class-string> */
-    protected array $excludedPages = [];
+    /** @var array<class-string>|null */
+    protected ?array $excludedPages = null;
 
     public static function make(): static
     {
@@ -40,9 +47,27 @@ class UnsavedChangesBarPlugin implements Plugin
         return 'unsaved-changes-bar';
     }
 
-    public function position(string $position): static
+    public function position(BarPosition $position): static
     {
-        $this->position = $position === 'top' ? 'top' : 'bottom';
+        $this->position = $position;
+
+        return $this;
+    }
+
+    /**
+     * Any colour registered with Filament: 'primary', 'success', 'warning', 'danger', 'info', 'gray',
+     * or your own from FilamentColor::register().
+     */
+    public function saveButtonColor(string $color): static
+    {
+        $this->saveButtonColor = $color;
+
+        return $this;
+    }
+
+    public function discardButtonColor(string $color): static
+    {
+        $this->discardButtonColor = $color;
 
         return $this;
     }
@@ -54,32 +79,62 @@ class UnsavedChangesBarPlugin implements Plugin
         return $this;
     }
 
-    public function guardNavigation(bool $condition = true): static
+    public function navigationGuard(NavigationGuard $guard): static
     {
-        $this->guardNavigation = $condition;
+        $this->navigationGuard = $guard;
 
         return $this;
     }
 
-    /** @param  array<class-string>  $pages */
-    public function pages(array $pages): static
+    /**
+     * Show the bar only on these pages. Also enables custom pages that have a save method.
+     *
+     * @param  array<class-string>  $pages
+     *
+     * @throws ConflictingPageFilters when excludePages() is also used
+     */
+    public function includePages(array $pages): static
     {
-        $this->pages = $pages;
+        if ($this->excludedPages !== null) {
+            throw ConflictingPageFilters::make();
+        }
+
+        $this->includedPages = $pages;
 
         return $this;
     }
 
-    /** @param  array<class-string>  $pages */
+    /**
+     * Show the bar everywhere it is eligible, except on these pages.
+     *
+     * @param  array<class-string>  $pages
+     *
+     * @throws ConflictingPageFilters when includePages() is also used
+     */
     public function excludePages(array $pages): static
     {
+        if ($this->includedPages !== null) {
+            throw ConflictingPageFilters::make();
+        }
+
         $this->excludedPages = $pages;
 
         return $this;
     }
 
-    public function getPosition(): string
+    public function getPosition(): BarPosition
     {
         return $this->position;
+    }
+
+    public function getSaveButtonColor(): string
+    {
+        return $this->saveButtonColor;
+    }
+
+    public function getDiscardButtonColor(): string
+    {
+        return $this->discardButtonColor;
     }
 
     public function shouldHideFormActionsWhenDirty(): bool
@@ -87,9 +142,9 @@ class UnsavedChangesBarPlugin implements Plugin
         return $this->hideFormActionsWhenDirty;
     }
 
-    public function shouldGuardNavigation(): bool
+    public function getNavigationGuard(): NavigationGuard
     {
-        return $this->guardNavigation;
+        return $this->navigationGuard;
     }
 
     public function register(Panel $panel): void
@@ -111,11 +166,11 @@ class UnsavedChangesBarPlugin implements Plugin
             return false;
         }
 
-        if (in_array($page, $this->excludedPages, true)) {
+        if ($this->excludedPages !== null && in_array($page, $this->excludedPages, true)) {
             return false;
         }
 
-        if ($this->pages !== null && ! in_array($page, $this->pages, true)) {
+        if ($this->includedPages !== null && ! in_array($page, $this->includedPages, true)) {
             return false;
         }
 
@@ -132,7 +187,7 @@ class UnsavedChangesBarPlugin implements Plugin
         return is_a($page, EditRecord::class, true)
             || is_a($page, CreateRecord::class, true)
             || in_array(HasUnsavedChangesBar::class, class_uses_recursive($page), true)
-            || $this->pages !== null && method_exists($page, 'save');
+            || $this->includedPages !== null && method_exists($page, 'save');
     }
 
     public function getSaveMethod(string $page): string
@@ -151,11 +206,13 @@ class UnsavedChangesBarPlugin implements Plugin
         }
 
         $view = view('filament-unsaved-changes-bar::bar', [
-            'position' => $this->position,
+            'position' => $this->position->value,
+            'saveButtonColor' => $this->saveButtonColor,
+            'discardButtonColor' => $this->discardButtonColor,
             'saveMethod' => $this->getSaveMethod($page),
             'hasTrait' => method_exists($page, 'discardChanges') && in_array(HasUnsavedChangesBar::class, class_uses_recursive($page), true),
             'hideFormActions' => $this->hideFormActionsWhenDirty,
-            'guardNavigation' => $this->guardNavigation,
+            'navigationGuard' => $this->navigationGuard->value,
         ]);
 
         return $view->render();

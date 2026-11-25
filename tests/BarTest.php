@@ -10,6 +10,9 @@ use Filament\Facades\Filament;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Foundation\Auth\User;
 use Livewire\Livewire;
+use SolutionForest\FilamentUnsavedChangesBar\Enums\BarPosition;
+use SolutionForest\FilamentUnsavedChangesBar\Enums\NavigationGuard;
+use SolutionForest\FilamentUnsavedChangesBar\Exceptions\ConflictingPageFilters;
 use SolutionForest\FilamentUnsavedChangesBar\UnsavedChangesBarPlugin;
 
 beforeEach(function () {
@@ -97,7 +100,7 @@ it('renders the bar on edit and create pages only', function () {
         ->and($list)->not->toContain('data-unsaved-changes-bar');
 });
 
-it('respects excludePages and pages', function () {
+it('respects excludePages and includePages', function () {
     $plugin = UnsavedChangesBarPlugin::make();
 
     expect($plugin->isPageEligible(EditPost::class))->toBeTrue()
@@ -108,7 +111,7 @@ it('respects excludePages and pages', function () {
     expect($excluding->isPageEligible(EditPost::class))->toBeFalse()
         ->and($excluding->isPageEligible(CreatePost::class))->toBeTrue();
 
-    $only = (new UnsavedChangesBarPlugin)->pages([CreatePost::class]);
+    $only = (new UnsavedChangesBarPlugin)->includePages([CreatePost::class]);
     expect($only->isPageEligible(EditPost::class))->toBeFalse()
         ->and($only->isPageEligible(CreatePost::class))->toBeTrue();
 });
@@ -123,11 +126,11 @@ it('respects the per-page opt-out property', function () {
 });
 
 it('renders position, options and translations', function () {
-    $plugin = (new UnsavedChangesBarPlugin)->position('top')->hideFormActionsWhenDirty()->guardNavigation(false);
+    $plugin = (new UnsavedChangesBarPlugin)->position(BarPosition::Top)->hideFormActionsWhenDirty()->navigationGuard(NavigationGuard::None);
 
-    expect($plugin->getPosition())->toBe('top')
+    expect($plugin->getPosition())->toBe(BarPosition::Top)
         ->and($plugin->shouldHideFormActionsWhenDirty())->toBeTrue()
-        ->and($plugin->shouldGuardNavigation())->toBeFalse();
+        ->and($plugin->getNavigationGuard())->toBe(NavigationGuard::None);
 
     foreach (['en' => 'Unsaved changes', 'zh_TW' => '尚有未儲存的變更', 'zh_CN' => '有未保存的更改'] as $locale => $label) {
         expect(__('filament-unsaved-changes-bar::bar.label', [], $locale))->toBe($label);
@@ -135,10 +138,10 @@ it('renders position, options and translations', function () {
 });
 
 it('renders the configured position into the bar markup', function () {
-    $html = (new UnsavedChangesBarPlugin)->position('top')->hideFormActionsWhenDirty()->guardNavigation(false)
+    $html = (new UnsavedChangesBarPlugin)->position(BarPosition::Top)->hideFormActionsWhenDirty()->navigationGuard(NavigationGuard::None)
         ->renderFor(EditPost::class);
 
-    expect($html)->toContain('fi-ucb-top')->toContain('hideFormActions: true')->toContain('guardNavigation: false')
+    expect($html)->toContain('fi-ucb-top')->toContain('hideFormActions: true')->toContain("navigationGuard: 'none'")
         ->and((new UnsavedChangesBarPlugin)->renderFor(EditPost::class))->toContain('fi-ucb-bottom')
         ->and((new UnsavedChangesBarPlugin)->renderFor(ListPosts::class))->toBe('');
 });
@@ -168,4 +171,48 @@ it('refreshes the hash after saving a custom page', function () {
 
     expect($component->get('unsavedChangesBarHash'))->toBe(expectedHash($component->get('data')))
         ->and(StoreSetting::current()->store_name)->toBe('Saved name');
+});
+
+it('refuses includePages() and excludePages() together, in either order', function () {
+    expect(fn () => (new UnsavedChangesBarPlugin)->includePages([EditPost::class])->excludePages([CreatePost::class]))
+        ->toThrow(ConflictingPageFilters::class)
+        ->and(fn () => (new UnsavedChangesBarPlugin)->excludePages([CreatePost::class])->includePages([EditPost::class]))
+        ->toThrow(ConflictingPageFilters::class);
+});
+
+it('renders the buttons with Filament colours', function () {
+    $default = (new UnsavedChangesBarPlugin)->renderFor(EditPost::class);
+    $custom = (new UnsavedChangesBarPlugin)->saveButtonColor('success')->discardButtonColor('danger')->renderFor(EditPost::class);
+
+    // 'gray' is Filament's default button colour, so it renders without a fi-color-* class.
+    expect($default)->toContain('fi-btn')->toContain('fi-color-primary')
+        ->toMatch('/class="fi-btn fi-outlined fi-size-sm\\s+fi-ucb-btn-discard"/')
+        ->and($custom)->toContain('fi-color-success')->toContain('fi-color-danger')->not->toContain('fi-color-primary');
+});
+
+it('uses each panel\'s own plugin configuration', function () {
+    /** @var UnsavedChangesBarPlugin $admin */
+    $admin = Filament::getPanel('admin')->getPlugin('unsaved-changes-bar');
+    /** @var UnsavedChangesBarPlugin $manager */
+    $manager = Filament::getPanel('manager')->getPlugin('unsaved-changes-bar');
+
+    expect($admin)->not->toBe($manager)
+        ->and($admin->renderFor(EditPost::class))->toContain('fi-ucb-bottom')->toContain('fi-color-primary')
+        ->and($admin->renderFor(CreatePost::class))->toContain('data-unsaved-changes-bar')
+        ->and($manager->renderFor(EditPost::class))->toContain('fi-ucb-top')->toContain('fi-color-success')->toContain('fi-color-danger')
+        ->and($manager->renderFor(CreatePost::class))->toBe(''); // includePages([EditPost::class])
+});
+
+it('renders the leave modal by default, and not in shake or none mode', function () {
+    $modal = (new UnsavedChangesBarPlugin)->renderFor(EditPost::class);
+    $shake = (new UnsavedChangesBarPlugin)->navigationGuard(NavigationGuard::Shake)->renderFor(EditPost::class);
+    $none = (new UnsavedChangesBarPlugin)->navigationGuard(NavigationGuard::None)->renderFor(EditPost::class);
+
+    expect($modal)->toContain('fi-modal')->toContain('Leave without saving?')->toContain('Save &amp; leave')
+        ->toContain('Discard &amp; leave')->toContain('Keep editing')
+        ->and($shake)->not->toContain('fi-modal')->toContain("navigationGuard: 'shake'")
+        ->and($none)->not->toContain('fi-modal');
+
+    app()->setLocale('zh_TW');
+    expect((new UnsavedChangesBarPlugin)->renderFor(EditPost::class))->toContain('儲存並離開')->toContain('繼續編輯');
 });

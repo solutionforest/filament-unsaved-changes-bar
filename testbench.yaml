@@ -13,6 +13,8 @@ providers:
   - Filament\Widgets\WidgetsServiceProvider
   - SolutionForest\FilamentUnsavedChangesBar\UnsavedChangesBarServiceProvider
   - Demo\App\Providers\AdminPanelProvider
+  - Demo\App\Providers\ManagerPanelProvider
+  - Laravel\Octane\OctaneServiceProvider
 
 env:
   - APP_NAME="Unsaved Changes Bar demo"

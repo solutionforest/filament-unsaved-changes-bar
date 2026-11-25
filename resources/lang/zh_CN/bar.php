@@ -6,4 +6,9 @@ return [
     'save' => '保存',
     'saving' => '保存中…',
     'discard_confirm' => '确定要放弃所有未保存的更改吗？',
+    'leave_heading' => '不保存就离开？',
+    'leave_description' => '此页面有未保存的更改，现在离开将会丢失。',
+    'save_and_leave' => '保存并离开',
+    'discard_and_leave' => '放弃并离开',
+    'keep_editing' => '继续编辑',
 ];

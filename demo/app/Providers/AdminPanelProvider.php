@@ -35,7 +35,7 @@ class AdminPanelProvider extends PanelProvider
             ->pages([Dashboard::class, StoreSettings::class])
             ->resources([PostResource::class])
             ->plugin(
-                // Try ->position('top'), ->hideFormActionsWhenDirty() or ->guardNavigation(false) here.
+                // Defaults: bottom, primary Save, gray Discard. The /manager panel shows the other options.
                 UnsavedChangesBarPlugin::make(),
             )
             ->middleware([
