@@ -78,9 +78,15 @@ protected function fillUnsavedChangesBarForms(): void
     $this->profileForm->fill(/* saved values */);
     $this->notificationsForm->fill(/* saved values */);
 }
+
+/** Called by the bar's Save after every form validated, inside a DB transaction. */
+protected function persistUnsavedChangesBar(array $states): void
+{
+    // $states = ['profileData' => [...], 'notificationsData' => [...]]
+}
 ```
 
-The bar's **Save** calls the page's save method (override `getUnsavedChangesBarSaveMethod()` if needed); call `$this->rememberUnsavedChangesBarData()` after saving. See `demo/app/Filament/Pages/Preferences.php`.
+The bar's **Save** calls `saveUnsavedChangesBar()`: it validates every form first (one invalid form saves nothing and all errors show), persists via your `persistUnsavedChangesBar()` in one transaction, then refreshes the baseline. State paths map to forms by convention (`profileData` → `profileForm`); override `getUnsavedChangesBarFormName()` to change that. See `demo/app/Filament/Pages/Preferences.php`.
 
 The browser's back / forward buttons are guarded in SPA mode too: the page stays put and the leave modal opens.
 

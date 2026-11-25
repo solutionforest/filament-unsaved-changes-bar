@@ -72,16 +72,19 @@ class Preferences extends Page implements HasForms
         return $schema->components([
             EmbeddedSchema::make('profileForm'),
             EmbeddedSchema::make('notificationsForm'),
-            Actions::make([Action::make('save')->action('save')]),
+            Actions::make([Action::make('save')->action('saveUnsavedChangesBar')]),
         ]);
     }
 
-    public function save(): void
+    /**
+     * The bar's Save validates both forms first, then calls this inside a transaction.
+     *
+     * @param  array<string, array<string, mixed>>  $states
+     */
+    protected function persistUnsavedChangesBar(array $states): void
     {
-        cache()->forever('demo.preferences.profile', $this->profileForm->getState());
-        cache()->forever('demo.preferences.notifications', $this->notificationsForm->getState());
-
-        $this->rememberUnsavedChangesBarData();
+        cache()->forever('demo.preferences.profile', $states['profileData']);
+        cache()->forever('demo.preferences.notifications', $states['notificationsData']);
 
         Notification::make()->success()->title('Preferences saved')->send();
     }
