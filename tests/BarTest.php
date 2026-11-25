@@ -1,9 +1,11 @@
 <?php
 
+use Demo\App\Filament\Pages\StoreSettings;
 use Demo\App\Filament\Resources\PostResource\Pages\CreatePost;
 use Demo\App\Filament\Resources\PostResource\Pages\EditPost;
 use Demo\App\Filament\Resources\PostResource\Pages\ListPosts;
 use Demo\App\Models\Post;
+use Demo\App\Models\StoreSetting;
 use Filament\Facades\Filament;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Foundation\Auth\User;
@@ -139,4 +141,31 @@ it('renders the configured position into the bar markup', function () {
     expect($html)->toContain('fi-ucb-top')->toContain('hideFormActions: true')->toContain('guardNavigation: false')
         ->and((new UnsavedChangesBarPlugin)->renderFor(EditPost::class))->toContain('fi-ucb-bottom')
         ->and((new UnsavedChangesBarPlugin)->renderFor(ListPosts::class))->toBe('');
+});
+
+it('discards changes on a custom page by calling its fillForm()', function () {
+    StoreSetting::current();
+
+    $component = Livewire::test(StoreSettings::class)
+        ->assertFormSet(['store_name' => 'Forest Coffee Co.'])
+        ->fillForm(['store_name' => 'Renamed'])
+        ->call('discardChanges')
+        ->assertFormSet(['store_name' => 'Forest Coffee Co.']);
+
+    expect($component->get('unsavedChangesBarHash'))->toBe(expectedHash($component->get('data')));
+});
+
+it('renders the bar on a custom page that uses the trait', function () {
+    expect(UnsavedChangesBarPlugin::make()->isPageEligible(StoreSettings::class))->toBeTrue()
+        ->and(Livewire::test(StoreSettings::class)->html())->toContain('data-unsaved-changes-bar');
+});
+
+it('refreshes the hash after saving a custom page', function () {
+    $component = Livewire::test(StoreSettings::class)
+        ->fillForm(['store_name' => 'Saved name'])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($component->get('unsavedChangesBarHash'))->toBe(expectedHash($component->get('data')))
+        ->and(StoreSetting::current()->store_name)->toBe('Saved name');
 });

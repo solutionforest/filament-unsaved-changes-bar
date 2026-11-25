@@ -3,7 +3,6 @@
 namespace SolutionForest\FilamentUnsavedChangesBar\Concerns;
 
 use Filament\Resources\Pages\CreateRecord;
-use Filament\Resources\Pages\EditRecord;
 use Livewire\Attributes\Locked;
 
 /**
@@ -33,7 +32,7 @@ trait HasUnsavedChangesBar
         $parent = get_parent_class($this);
 
         if ($parent !== false && method_exists($parent, 'rememberData')) {
-            parent::rememberData();
+            parent::rememberData(); // @phpstan-ignore staticMethod.notFound (guarded above; the trait is also used on custom pages)
         }
 
         $this->rememberUnsavedChangesBarData();
@@ -46,7 +45,9 @@ trait HasUnsavedChangesBar
 
     public function discardChanges(): void
     {
-        if ($this instanceof EditRecord || $this instanceof CreateRecord) {
+        // EditRecord / CreateRecord refill from the record (or defaults). Custom pages can define their own
+        // fillForm() to reload saved values; otherwise the form is reset to its defaults.
+        if (method_exists($this, 'fillForm')) { // @phpstan-ignore function.alreadyNarrowedType (always true on Edit/Create, not on custom pages)
             $this->fillForm();
         } else {
             $this->form->fill();
