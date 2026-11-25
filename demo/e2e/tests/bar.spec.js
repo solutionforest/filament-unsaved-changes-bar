@@ -328,3 +328,15 @@ test.describe('mobile', () => {
         await leaveModal(page).getByRole('button', { name: 'Keep editing' }).click()
     })
 })
+
+test('Ctrl+S saves while the bar is showing', async ({ page }) => {
+    await openFirstPost(page)
+    const slug = 'shortcut-' + Date.now()
+    await page.getByLabel('Slug').fill(slug)
+    await expectVisible(page)
+
+    await page.getByLabel('Slug').press('Control+s')
+    await expectHidden(page)
+    await page.reload()
+    await expect(page.getByLabel('Slug')).toHaveValue(slug)
+})

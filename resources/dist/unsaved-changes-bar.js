@@ -88,6 +88,19 @@ export default function unsavedChangesBar({
                 this.cleanups.push(() => document.removeEventListener('click', onClick, true))
             }
 
+            // Ctrl/Cmd+S saves while the bar is showing (and stops the browser's "save page" dialog).
+            const onKeydown = (event) => {
+                if (!(event.ctrlKey || event.metaKey) || event.altKey || event.key.toLowerCase() !== 's') return
+
+                this.check()
+                if (!this.isDirty) return
+
+                event.preventDefault()
+                this.save()
+            }
+            document.addEventListener('keydown', onKeydown)
+            this.cleanups.push(() => document.removeEventListener('keydown', onKeydown))
+
             const onResize = () => this.syncLayout()
             window.addEventListener('resize', onResize)
             this.cleanups.push(() => window.removeEventListener('resize', onResize))
