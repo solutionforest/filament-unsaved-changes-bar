@@ -57,7 +57,7 @@ class EditPost extends EditRecord
 | | With the trait | Without the trait |
 |---|---|---|
 | Dirty baseline | Server-side hash, refreshed after every save | Taken in the browser from the first rendered state |
-| **Discard** | Refills the form from the record (Edit) or defaults (Create). No reload. | Asks for confirmation, then reloads the page |
+| **Discard** | Refills the form from the record (Edit) or defaults (Create). No reload. | Asks in a Filament modal, then reloads the page |
 
 ## Options
 
@@ -78,13 +78,13 @@ UnsavedChangesBarPlugin::make()
 
 ### Leaving the page: `navigationGuard()`
 
-| Mode | Clicking an SPA link (sidebar, breadcrumb…) while dirty |
+| Mode | Clicking a link (sidebar, breadcrumb…), with or without panel `->spa()` while dirty |
 |---|---|
 | `NavigationGuard::Modal` (default) | Opens a modal: **Save & leave** (saves, then navigates; stays if validation fails), **Discard & leave**, **Keep editing** |
 | `NavigationGuard::Shake` | Stays on the page and shakes the bar |
 | `NavigationGuard::None` | Doesn't intercept navigation |
 
-Closing the tab or reloading the page always shows the browser's native "Leave site?" dialog. Browsers don't allow any custom UI there. The guard only replaces Filament's `confirm()` popup, so the user is never asked twice.
+Closing the tab or reloading the page always shows the browser's native "Leave site?" dialog. Browsers don't allow any custom UI there. Link clicks are intercepted before the browser navigates, so the modal also works on panels without SPA mode, and the user is never asked twice.
 
 ![Leave modal](docs/images/leave-modal.png)
 

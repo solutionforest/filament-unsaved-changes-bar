@@ -5,6 +5,7 @@ namespace SolutionForest\FilamentUnsavedChangesBar\Tests;
 use BladeUI\Heroicons\BladeHeroiconsServiceProvider;
 use BladeUI\Icons\BladeIconsServiceProvider;
 use Demo\App\Providers\AdminPanelProvider;
+use Demo\App\Providers\ClassicPanelProvider;
 use Demo\App\Providers\ManagerPanelProvider;
 use Filament\Actions\ActionsServiceProvider;
 use Filament\FilamentServiceProvider;
@@ -39,6 +40,7 @@ abstract class TestCase extends Orchestra
             UnsavedChangesBarServiceProvider::class,
             AdminPanelProvider::class,
             ManagerPanelProvider::class,
+            ClassicPanelProvider::class,
         ];
     }
 

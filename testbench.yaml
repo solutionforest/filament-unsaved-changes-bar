@@ -14,6 +14,7 @@ providers:
   - SolutionForest\FilamentUnsavedChangesBar\UnsavedChangesBarServiceProvider
   - Demo\App\Providers\AdminPanelProvider
   - Demo\App\Providers\ManagerPanelProvider
+  - Demo\App\Providers\ClassicPanelProvider
   - Laravel\Octane\OctaneServiceProvider
 
 env:
