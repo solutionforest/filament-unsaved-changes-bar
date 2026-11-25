@@ -61,6 +61,29 @@ class EditPost extends EditRecord
 
 **Ctrl/⌘ + S** saves while the bar is visible, with or without the trait.
 
+## Pages with several forms
+
+Track every form's state path and reset them all on Discard:
+
+```php
+use HasUnsavedChangesBar;
+
+public static function getUnsavedChangesBarStatePaths(): array
+{
+    return ['profileData', 'notificationsData'];
+}
+
+protected function fillUnsavedChangesBarForms(): void
+{
+    $this->profileForm->fill(/* saved values */);
+    $this->notificationsForm->fill(/* saved values */);
+}
+```
+
+The bar's **Save** calls the page's save method (override `getUnsavedChangesBarSaveMethod()` if needed); call `$this->rememberUnsavedChangesBarData()` after saving. See `demo/app/Filament/Pages/Preferences.php`.
+
+The browser's back / forward buttons are guarded in SPA mode too: the page stays put and the leave modal opens.
+
 ## Options
 
 Every option uses an enum or a Filament colour name, so a typo can't silently break it.

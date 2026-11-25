@@ -2,6 +2,7 @@
 
 namespace Demo\App\Providers;
 
+use Demo\App\Filament\Pages\Preferences;
 use Demo\App\Filament\Pages\StoreSettings;
 use Demo\App\Filament\Resources\PostResource;
 use Filament\Http\Middleware\Authenticate;
@@ -32,7 +33,7 @@ class AdminPanelProvider extends PanelProvider
             ->brandName('Unsaved Changes Bar demo')
             ->colors(['primary' => Color::Emerald])
             ->spa()
-            ->pages([Dashboard::class, StoreSettings::class])
+            ->pages([Dashboard::class, StoreSettings::class, Preferences::class])
             ->resources([PostResource::class])
             ->plugin(
                 // Defaults: bottom, primary Save, gray Discard. The /manager panel shows the other options.

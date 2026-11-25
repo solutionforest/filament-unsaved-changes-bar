@@ -1,5 +1,6 @@
 <?php
 
+use Demo\App\Filament\Pages\Preferences;
 use Demo\App\Filament\Pages\StoreSettings;
 use Demo\App\Filament\Resources\PostResource\Pages\CreatePost;
 use Demo\App\Filament\Resources\PostResource\Pages\EditPost;
@@ -215,4 +216,21 @@ it('renders the leave modal by default, and not in shake or none mode', function
 
     app()->setLocale('zh_TW');
     expect((new UnsavedChangesBarPlugin)->renderFor(EditPost::class))->toContain('儲存並離開')->toContain('繼續編輯');
+});
+
+it('tracks several state paths with one hash over {path: value}', function () {
+    $page = Livewire::test(Preferences::class);
+    $baseline = $page->get('unsavedChangesBarHash');
+
+    expect($baseline)->toBe(md5(str_replace('\\', '', json_encode(['profileData' => $page->get('profileData'), 'notificationsData' => $page->get('notificationsData')], JSON_UNESCAPED_UNICODE))));
+
+    $page->set('notificationsData.email_digest', false);
+    expect($page->get('unsavedChangesBarHash'))->toBe($baseline);
+
+    $page->call('discardChanges');
+    expect($page->get('notificationsData.email_digest'))->toBeTrue();
+
+    $page->set('profileData.name', 'Someone else')->call('save');
+    expect($page->get('unsavedChangesBarHash'))->not->toBe($baseline);
+    cache()->forget('demo.preferences.profile');
 });

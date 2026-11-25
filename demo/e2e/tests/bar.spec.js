@@ -340,3 +340,50 @@ test('Ctrl+S saves while the bar is showing', async ({ page }) => {
     await page.reload()
     await expect(page.getByLabel('Slug')).toHaveValue(slug)
 })
+
+test('page with two forms: a change in either form shows the bar, save persists both', async ({ page }) => {
+    await page.goto('/admin/preferences')
+    await page.waitForTimeout(800)
+    await expectHidden(page)
+
+    const name = page.getByLabel('Name')
+    const original = await name.inputValue()
+    await name.fill(original + ' 2')
+    await expectVisible(page)
+    await name.fill(original)
+    await expectHidden(page)
+
+    await page.getByLabel('Weekly email digest').click() // second form
+    await expectVisible(page)
+    await bar(page).getByRole('button', { name: 'Discard' }).click()
+    await expectHidden(page)
+    await expect(page.getByLabel('Weekly email digest')).toBeChecked()
+
+    await name.fill(original + ' 3')
+    await bar(page).getByRole('button', { name: 'Save' }).click()
+    await expectHidden(page)
+    await page.reload()
+    await expect(name).toHaveValue(original + ' 3')
+    await name.fill(original)
+    await bar(page).getByRole('button', { name: 'Save' }).click()
+    await expectHidden(page)
+})
+
+test('browser back button in SPA mode opens the leave modal and keeps the URL', async ({ page }) => {
+    await openFirstPost(page)
+    const url = page.url()
+    await page.getByLabel('Title').fill('Dirty')
+    await expectVisible(page)
+
+    await page.goBack()
+    await expect(leaveModal(page)).toBeVisible()
+    expect(page.url()).toBe(url)
+    await expect(page.getByLabel('Title')).toHaveValue('Dirty')
+
+    await leaveModal(page).getByRole('button', { name: 'Keep editing' }).click()
+    await expect(page.getByLabel('Title')).toHaveValue('Dirty')
+
+    await page.goBack()
+    await leaveModal(page).getByRole('button', { name: 'Discard & leave' }).click()
+    await page.waitForURL('**/admin/posts')
+})

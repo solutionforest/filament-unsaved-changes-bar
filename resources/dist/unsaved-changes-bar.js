@@ -1,6 +1,7 @@
 // Alpine component for the unsaved-changes bar. Hand-written ES module (no build step needed).
 // The dirty check mirrors Filament's own unsaved-changes alert:
 //   md5(JSON.stringify($wire.data).replace(/\\/g, ''))  vs  the server-side baseline hash.
+// Pages with several forms track every state path (the hash is then taken over {path: value, ...}).
 
 export default function unsavedChangesBar({
     saveMethod = 'save',
@@ -8,6 +9,7 @@ export default function unsavedChangesBar({
     hideFormActions = false,
     navigationGuard = 'modal',
     modalId = null,
+    statePaths = ['data'],
     discardModalId = null,
 } = {}) {
     return {
@@ -23,6 +25,10 @@ export default function unsavedChangesBar({
         bypassGuard: false,
         pendingUrl: null,
         pendingSpa: false,
+        restoring: false,
+        guardUrl: null,
+        guardState: null,
+        guardIndex: null,
         cleanups: [],
         timers: {},
 
@@ -38,7 +44,7 @@ export default function unsavedChangesBar({
             }
 
             const check = () => this.check()
-            this.$wire.$watch('data', () => this.debounce('check', check, 150))
+            statePaths.forEach((path) => this.$wire.$watch(path, () => this.debounce('check', check, 150)))
             this.$wire.$watch('unsavedChangesBarHash', check)
             this.$wire.$watch('savedDataHash', check)
 
@@ -51,6 +57,15 @@ export default function unsavedChangesBar({
                 // Capture phase on window: runs before Filament's own `confirm()` handler, which we then pre-empt
                 // so the user never gets double-prompted.
                 const onNavigate = (event) => {
+                    // The popstate caused by our own history.go() below: swallow it.
+                    if (this.restoring) {
+                        this.restoring = false
+                        event.preventDefault()
+                        event.stopImmediatePropagation()
+
+                        return
+                    }
+
                     if (this.bypassGuard || this.hasRedirect()) return
 
                     // The watcher is debounced: re-check now so a quick type-then-click is still caught.
@@ -59,6 +74,10 @@ export default function unsavedChangesBar({
 
                     event.preventDefault()
                     event.stopImmediatePropagation()
+
+                    // Back / forward button: the address bar already shows the destination. Put the current entry
+                    // back so "Keep editing" really keeps editing, then ask.
+                    if (event.detail?.history && this.guardUrl) this.restoreHistoryEntry()
 
                     this.requestLeave(event.detail?.url?.toString() ?? null, true)
                 }
@@ -138,7 +157,10 @@ export default function unsavedChangesBar({
         },
 
         currentHash() {
-            const serialised = JSON.stringify(this.$wire.data ?? {}).replace(/\\/g, '')
+            const state = statePaths.length === 1
+                ? (this.$wire[statePaths[0]] ?? {})
+                : Object.fromEntries(statePaths.map((path) => [path, this.$wire[path] ?? null]))
+            const serialised = JSON.stringify(state).replace(/\\/g, '')
 
             return typeof window.jsMd5 === 'function' ? window.jsMd5(serialised) : serialised
         },
@@ -182,6 +204,14 @@ export default function unsavedChangesBar({
             const baseline = this.baseline()
             this.isDirty = baseline !== null && !this.hasRedirect() && this.currentHash() !== baseline
 
+            // While clean, remember where this page lives (history entry + URL) so a back-button press can be undone.
+            // Not taken at init: on an SPA navigation the URL may not have been swapped in yet.
+            if (!this.isDirty) {
+                this.guardUrl = window.location.href
+                this.guardState = JSON.stringify(window.history.state ?? null)
+                this.guardIndex = window.navigation?.currentEntry?.index ?? null
+            }
+
             document.body.classList.toggle('fi-ucb-hide-actions', hideFormActions && this.isDirty)
             document.body.classList.toggle('fi-ucb-visible', this.isDirty)
             this.syncLayout()
@@ -208,6 +238,21 @@ export default function unsavedChangesBar({
                 this.$el.querySelector('.fi-ucb-btn-save')?.focus()
                 setTimeout(() => (this.shaking = false), 600)
             })
+        },
+
+        // After a back/forward press the address bar shows the destination: step back to this page's own entry.
+        restoreHistoryEntry() {
+            const here = this.guardIndex
+            const there = window.navigation?.currentEntry?.index
+
+            if (typeof here === 'number' && typeof there === 'number' && here !== there) {
+                this.restoring = true
+                window.history.go(here - there)
+                setTimeout(() => (this.restoring = false), 1000)
+            } else {
+                // No Navigation API: add the page's entry again (history gains one entry, URL stays correct).
+                window.history.pushState(JSON.parse(this.guardState), '', this.guardUrl)
+            }
         },
 
         isGuardedLink(anchor) {
@@ -253,10 +298,6 @@ export default function unsavedChangesBar({
 
             if (spa && window.Livewire?.navigate) window.Livewire.navigate(url)
             else window.location.assign(url)
-        },
-
-        leaveWithoutSaving() {
-            this.leave()
         },
 
         async saveAndLeave() {

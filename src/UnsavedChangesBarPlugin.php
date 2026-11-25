@@ -180,14 +180,24 @@ class UnsavedChangesBarPlugin implements Plugin
             return false;
         }
 
-        if (! property_exists($page, 'data')) {
-            return false;
+        foreach ($this->getStatePaths($page) as $path) {
+            if (! property_exists($page, $path)) {
+                return false;
+            }
         }
 
         return is_a($page, EditRecord::class, true)
             || is_a($page, CreateRecord::class, true)
             || in_array(HasUnsavedChangesBar::class, class_uses_recursive($page), true)
             || $this->includedPages !== null && method_exists($page, 'save');
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function getStatePaths(string $page): array
+    {
+        return method_exists($page, 'getUnsavedChangesBarStatePaths') ? $page::getUnsavedChangesBarStatePaths() : ['data'];
     }
 
     public function getSaveMethod(string $page): string
@@ -210,6 +220,7 @@ class UnsavedChangesBarPlugin implements Plugin
             'saveButtonColor' => $this->saveButtonColor,
             'discardButtonColor' => $this->discardButtonColor,
             'saveMethod' => $this->getSaveMethod($page),
+            'statePaths' => $this->getStatePaths($page),
             'hasTrait' => method_exists($page, 'discardChanges') && in_array(HasUnsavedChangesBar::class, class_uses_recursive($page), true),
             'hideFormActions' => $this->hideFormActionsWhenDirty,
             'navigationGuard' => $this->navigationGuard->value,
