@@ -59,6 +59,8 @@ class EditPost extends EditRecord
 | Dirty baseline | Server-side hash, refreshed after every save | Taken in the browser from the first rendered state |
 | **Discard** | Refills the form from the record (Edit) or defaults (Create). No reload. | Asks in a Filament modal, then reloads the page |
 
+**Ctrl/⌘ + S** saves while the bar is visible, with or without the trait.
+
 ## Options
 
 Every option uses an enum or a Filament colour name, so a typo can't silently break it.
