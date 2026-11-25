@@ -11,6 +11,7 @@
     x-load-src="{{ FilamentAsset::getAlpineComponentSrc('unsaved-changes-bar', 'solutionforest/filament-unsaved-changes-bar') }}"
     x-data="unsavedChangesBar({
         saveMethod: @js($saveMethod),
+        statePaths: @js($statePaths),
         hasTrait: @js($hasTrait),
         hideFormActions: @js($hideFormActions),
         navigationGuard: @js($navigationGuard),
@@ -78,7 +79,7 @@
                     {{ __('filament-unsaved-changes-bar::bar.keep_editing') }}
                 </x-filament::button>
 
-                <x-filament::button :color="$discardButtonColor === 'gray' ? 'danger' : $discardButtonColor" outlined x-on:click="leaveWithoutSaving()" x-bind:disabled="isSaving" class="fi-ucb-modal-discard">
+                <x-filament::button :color="$discardButtonColor === 'gray' ? 'danger' : $discardButtonColor" outlined x-on:click="leave()" x-bind:disabled="isSaving" class="fi-ucb-modal-discard">
                     {{ __('filament-unsaved-changes-bar::bar.discard_and_leave') }}
                 </x-filament::button>
 

@@ -40,10 +40,39 @@ trait HasUnsavedChangesBar
 
     protected function rememberUnsavedChangesBarData(): void
     {
-        $this->unsavedChangesBarHash = md5(str_replace('\\', '', (string) json_encode($this->data, JSON_UNESCAPED_UNICODE)));
+        $paths = static::getUnsavedChangesBarStatePaths();
+
+        // One form: exactly Filament's own hash. Several forms: the same formula over {path: value}.
+        $state = count($paths) === 1
+            ? $this->{$paths[0]}
+            : collect($paths)->mapWithKeys(fn (string $path): array => [$path => $this->{$path}])->all();
+
+        $this->unsavedChangesBarHash = md5(str_replace('\\', '', (string) json_encode($state, JSON_UNESCAPED_UNICODE)));
+    }
+
+    /**
+     * Livewire properties holding the form state that the bar tracks. Override on pages with several forms,
+     * e.g. `['profileData', 'passwordData']`, and override fillUnsavedChangesBarForms() to reset them all.
+     *
+     * @return non-empty-array<int, string>
+     */
+    public static function getUnsavedChangesBarStatePaths(): array
+    {
+        return ['data'];
     }
 
     public function discardChanges(): void
+    {
+        $this->fillUnsavedChangesBarForms();
+
+        $this->resetValidation();
+        $this->rememberUnsavedChangesBarData();
+    }
+
+    /**
+     * Reset the tracked forms to their saved values. Override on pages with several forms.
+     */
+    protected function fillUnsavedChangesBarForms(): void
     {
         // EditRecord / CreateRecord refill from the record (or defaults). Custom pages can define their own
         // fillForm() to reload saved values; otherwise the form is reset to its defaults.
@@ -52,9 +81,6 @@ trait HasUnsavedChangesBar
         } else {
             $this->form->fill();
         }
-
-        $this->resetValidation();
-        $this->rememberUnsavedChangesBarData();
     }
 
     public static function getUnsavedChangesBarSaveMethod(): string
