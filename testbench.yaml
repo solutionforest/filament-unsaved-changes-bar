@@ -1,0 +1,52 @@
+providers:
+  - BladeUI\Heroicons\BladeHeroiconsServiceProvider
+  - BladeUI\Icons\BladeIconsServiceProvider
+  - Livewire\LivewireServiceProvider
+  - Filament\FilamentServiceProvider
+  - Filament\Actions\ActionsServiceProvider
+  - Filament\Forms\FormsServiceProvider
+  - Filament\Infolists\InfolistsServiceProvider
+  - Filament\Notifications\NotificationsServiceProvider
+  - Filament\Schemas\SchemasServiceProvider
+  - Filament\Support\SupportServiceProvider
+  - Filament\Tables\TablesServiceProvider
+  - Filament\Widgets\WidgetsServiceProvider
+  - SolutionForest\FilamentUnsavedChangesBar\UnsavedChangesBarServiceProvider
+  - Demo\App\Providers\AdminPanelProvider
+  - Demo\App\Providers\ManagerPanelProvider
+  - Laravel\Octane\OctaneServiceProvider
+
+env:
+  - APP_NAME="Unsaved Changes Bar demo"
+  - APP_URL=http://127.0.0.1:8000
+  - AUTH_MODEL=Demo\App\Models\User
+  - DB_CONNECTION=sqlite
+  - FILESYSTEM_DISK=public
+
+migrations:
+  - demo/database/migrations
+
+seeders:
+  - Demo\Database\Seeders\DatabaseSeeder
+
+workbench:
+  start: /admin
+  install: true
+  discovers:
+    web: false
+    api: false
+    commands: false
+    components: false
+    views: false
+  build:
+    - asset-publish
+    - create-sqlite-db
+    - db-wipe
+    - migrate-fresh:
+        --seed: true
+        --seeder: Demo\Database\Seeders\DatabaseSeeder
+    - storage-link:
+        --force: true
+  assets:
+    - laravel-assets
+  sync: []
