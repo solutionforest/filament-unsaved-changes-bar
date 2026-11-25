@@ -10,11 +10,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# Runs on Solution Forest's self-hosted runners (Linux x64, with sudo for setup-php / Playwright deps).
-# Register one under Settings → Actions → Runners if the jobs sit in "Queued".
 jobs:
   pest:
-    runs-on: [self-hosted, linux]
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -32,7 +30,7 @@ jobs:
       - run: composer test
 
   quality:
-    runs-on: [self-hosted, linux]
+    runs-on: ubuntu-latest
     name: Larastan + Pint
     steps:
       - uses: actions/checkout@v4
@@ -46,7 +44,7 @@ jobs:
       - run: composer format -- --test
 
   e2e:
-    runs-on: [self-hosted, linux]
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -81,7 +79,7 @@ jobs:
         working-directory: demo/e2e
         run: |
           npm ci --no-audit --no-fund
-          npx playwright install chromium
+          npx playwright install --with-deps chromium
       - name: Run browser tests
         working-directory: demo/e2e
         env:
