@@ -1,0 +1,10 @@
+# Keep the Composer dist archive small: dev-only folders stay in the repo.
+/.github        export-ignore
+/demo           export-ignore
+/docs           export-ignore
+/tests          export-ignore
+/.gitattributes export-ignore
+/.gitignore     export-ignore
+/phpstan.neon.dist export-ignore
+/phpunit.xml.dist  export-ignore
+/testbench.yaml    export-ignore
