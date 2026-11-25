@@ -3,7 +3,7 @@
 [![tests](https://github.com/solutionforest/filament-unsaved-changes-bar/actions/workflows/tests.yml/badge.svg)](https://github.com/solutionforest/filament-unsaved-changes-bar/actions/workflows/tests.yml)
 [![Latest release](https://img.shields.io/github/v/release/solutionforest/filament-unsaved-changes-bar?label=release)](https://github.com/solutionforest/filament-unsaved-changes-bar/releases)
 [![License](https://img.shields.io/github/license/solutionforest/filament-unsaved-changes-bar)](LICENSE.md)
-[![PHP](https://img.shields.io/badge/php-8.2%2B-777bb4)](composer.json)
+[![PHP](https://img.shields.io/badge/php-8.3%2B-777bb4)](composer.json)
 [![Filament](https://img.shields.io/badge/filament-5.x-fdae4b)](https://filamentphp.com)
 [![Livewire](https://img.shields.io/badge/livewire-4.x-fb70a9)](https://livewire.laravel.com)
 
@@ -15,7 +15,7 @@ A floating **"Unsaved changes · Discard · Save"** bar for Filament 5 panel for
 
 Video: [`docs/images/demo.mp4`](docs/images/demo.mp4)
 
-- **Filament 5** (Livewire 4), PHP 8.2+.
+- **Filament 5** (Livewire 4), PHP 8.3+.
 - **Works out of the box** on every resource `EditRecord` and `CreateRecord` page, and on custom pages.
 - **Leave modal**: clicking a link while the form is dirty opens a modal with **Save & leave**, **Discard & leave** and **Keep editing**.
 - **Filament-native look**: the bar is built from `<x-filament::button>` and `<x-filament::modal>`. It follows your panel's colours and dark mode, and you can pick any registered Filament colour for the buttons.
@@ -257,7 +257,7 @@ composer format          # Pint
 
 CI (`.github/workflows/tests.yml`) runs on GitHub-hosted runners. It runs:
 
-- Pest on PHP 8.2–8.4,
+- Pest on PHP 8.3–8.4,
 - Larastan and Pint, and
 - the Playwright browser tests against the demo, served by both `php artisan serve` and Octane (Swoole).
 
