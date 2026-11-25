@@ -1,6 +1,11 @@
 # Filament Unsaved Changes Bar
 
 [![tests](https://github.com/solutionforest/filament-unsaved-changes-bar/actions/workflows/tests.yml/badge.svg)](https://github.com/solutionforest/filament-unsaved-changes-bar/actions/workflows/tests.yml)
+[![Latest release](https://img.shields.io/github/v/release/solutionforest/filament-unsaved-changes-bar?label=release)](https://github.com/solutionforest/filament-unsaved-changes-bar/releases)
+[![License](https://img.shields.io/github/license/solutionforest/filament-unsaved-changes-bar)](LICENSE.md)
+[![PHP](https://img.shields.io/badge/php-8.2%2B-777bb4)](composer.json)
+[![Filament](https://img.shields.io/badge/filament-5.x-fdae4b)](https://filamentphp.com)
+[![Livewire](https://img.shields.io/badge/livewire-4.x-fb70a9)](https://livewire.laravel.com)
 
 A floating **"Unsaved changes · Discard · Save"** bar for Filament 5 panel forms, in the style of Shopify and Laravel Cloud. It slides in as soon as a form is edited and disappears once the changes are saved, discarded, or typed back to their original values. If the user tries to leave with unsaved changes, a modal asks what to do with them.
 
