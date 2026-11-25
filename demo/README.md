@@ -32,6 +32,9 @@ Open <http://127.0.0.1:8000/admin> (or the second panel at `/manager`) and log i
 | **Store settings** | Edit, then **Save** or **Discard** | A custom (non-resource) page with the same behaviour |
 | **/manager** panel → Posts → Edit | Edit, then click **Dashboard** | Second panel, configured separately: bar at the top, success/danger buttons, the bar shakes instead of opening a modal. Create pages there show no bar (`includePages`). |
 
+| **/classic** panel (no `->spa()`) → Posts (no trait) → Edit | Edit, then click **Dashboard** | The same leave modal on full page loads. **Discard** asks in a modal, then reloads. |
+| Any page on a phone-sized window | Edit a field | Full-width bar; leave modal buttons stack |
+
 To try the plugin's options, edit `UnsavedChangesBarPlugin::make()` in `app/Providers/AdminPanelProvider.php` or `ManagerPanelProvider.php`.
 
 To serve the same app with Laravel Octane (Swoole), run `composer demo:octane`.

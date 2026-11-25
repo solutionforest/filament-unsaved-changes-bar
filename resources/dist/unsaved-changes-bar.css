@@ -2,7 +2,7 @@
    matches any panel theme. Button colours come from <x-filament::button> and the panel's registered colours. */
 .fi-ucb {
     position: fixed;
-    left: 50%;
+    left: var(--fi-ucb-left, 50%);
     z-index: 40;
     display: flex;
     align-items: center;
@@ -14,7 +14,7 @@
     font-size: 0.875rem;
     line-height: 1.25rem;
     box-shadow: 0 0 0 1px color-mix(in oklab, var(--gray-950) 5%, transparent), 0 10px 25px -5px rgb(0 0 0 / 0.15);
-    transform: translateX(-50%);
+    translate: -50% 0;
 }
 .dark .fi-ucb {
     background-color: var(--gray-900);
@@ -28,13 +28,33 @@
 .dark .fi-ucb-icon { color: var(--warning-400); }
 .fi-ucb-enter { transition: transform 0.2s ease-out, opacity 0.2s ease-out; }
 .fi-ucb-leave { transition: transform 0.15s ease-in, opacity 0.15s ease-in; }
-.fi-ucb-bottom.fi-ucb-enter-start { opacity: 0; transform: translate(-50%, 1rem); }
-.fi-ucb-top.fi-ucb-enter-start { opacity: 0; transform: translate(-50%, -1rem); }
+.fi-ucb-bottom.fi-ucb-enter-start { opacity: 0; transform: translateY(1rem); }
+.fi-ucb-top.fi-ucb-enter-start { opacity: 0; transform: translateY(-1rem); }
 .fi-ucb-shake { animation: fi-ucb-shake 0.5s; box-shadow: 0 0 0 2px var(--warning-500), 0 10px 25px -5px rgb(0 0 0 / 0.15); }
 @keyframes fi-ucb-shake {
-    0%, 100% { transform: translateX(-50%); }
-    20%, 60% { transform: translateX(calc(-50% - 8px)); }
-    40%, 80% { transform: translateX(calc(-50% + 8px)); }
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-8px); }
+    40%, 80% { transform: translateX(8px); }
 }
 @media (prefers-reduced-motion: reduce) { .fi-ucb-shake { animation: none; } .fi-ucb-enter, .fi-ucb-leave { transition: none; } }
 body.fi-ucb-hide-actions .fi-page form .fi-sc-actions { display: none; }
+
+/* Keep the last fields and the page's own buttons reachable while the bar is showing. */
+body.fi-ucb-visible .fi-main { padding-bottom: 6rem; }
+
+/* Phones: full-width bar, label above the buttons; modal buttons stack. */
+@media (max-width: 639px) {
+    .fi-ucb {
+        left: 0.75rem;
+        right: 0.75rem;
+        translate: none;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        padding: 0.75rem;
+    }
+    .fi-ucb-label { flex: 1 1 100%; margin-inline-end: 0; }
+    .fi-ucb-btn-discard, .fi-ucb-btn-save { flex: 1 1 0; }
+    .fi-ucb-bottom { bottom: 0.75rem; }
+    .fi-ucb-top { top: 0.75rem; }
+    .fi-ucb-modal-keep, .fi-ucb-modal-discard, .fi-ucb-modal-save { width: 100%; }
+}

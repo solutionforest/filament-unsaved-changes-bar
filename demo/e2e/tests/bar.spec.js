@@ -206,3 +206,125 @@ test('multi-panel: the /manager panel uses its own configuration', async ({ page
     await page.goto('/manager/posts/create')
     await expect(page.locator('[data-unsaved-changes-bar]')).toHaveCount(0)
 })
+
+// ---- Non-SPA panel, no-trait discard modal, layout and mobile ----
+
+async function openClassicPlainPost(page) {
+    await page.goto('/classic/plain-posts')
+    await page.getByRole('link', { name: 'Introducing our autumn roast' }).first().click()
+    await page.waitForURL('**/classic/plain-posts/*/edit')
+    await page.waitForTimeout(800)
+}
+
+test('non-SPA panel: clicking a sidebar link while dirty opens the leave modal', async ({ page }) => {
+    await openClassicPlainPost(page)
+    const url = page.url()
+    let dialogs = 0
+    page.on('dialog', (d) => { dialogs++; d.dismiss() })
+
+    await page.getByLabel('Title').fill('Dirty')
+    await expectVisible(page)
+    await sidebarLink(page, 'Dashboard').click()
+
+    await expect(leaveModal(page)).toBeVisible()
+    expect(page.url()).toBe(url)
+    expect(dialogs).toBe(0) // no native beforeunload dialog: we intercepted the click
+
+    await leaveModal(page).getByRole('button', { name: 'Keep editing' }).click()
+    await expect(leaveModal(page)).toBeHidden()
+    await expect(page.getByLabel('Title')).toHaveValue('Dirty')
+})
+
+test('non-SPA panel: Discard & leave performs a normal page load', async ({ page }) => {
+    await openClassicPlainPost(page)
+    await page.getByLabel('Title').fill('Thrown away')
+    await sidebarLink(page, 'Dashboard').click()
+    await leaveModal(page).getByRole('button', { name: 'Discard & leave' }).click()
+    await page.waitForURL('**/classic')
+})
+
+test('non-SPA panel: Save & leave saves, then loads the link', async ({ page }) => {
+    await openClassicPlainPost(page)
+    const editUrl = page.url()
+    const slug = 'classic-saved-' + Date.now()
+    await page.getByLabel('Slug').fill(slug)
+    await sidebarLink(page, 'Dashboard').click()
+    await leaveModal(page).getByRole('button', { name: 'Save & leave' }).click()
+    await page.waitForURL('**/classic')
+
+    await page.goto(editUrl)
+    await expect(page.getByLabel('Slug')).toHaveValue(slug)
+})
+
+test('page without the trait: Discard asks in a Filament modal (no native confirm), then reloads', async ({ page }) => {
+    await openClassicPlainPost(page)
+    const title = page.getByLabel('Title')
+    const original = await title.inputValue()
+    let dialogs = 0
+    page.on('dialog', (d) => { dialogs++; d.accept() })
+
+    await title.fill('Something else')
+    await bar(page).getByRole('button', { name: 'Discard' }).click()
+
+    const modal = page.locator('.fi-modal-window').filter({ hasText: 'Discard all changes?' })
+    await expect(modal).toBeVisible()
+
+    await modal.getByRole('button', { name: 'Cancel' }).click()
+    await expect(modal).toBeHidden()
+    await expect(title).toHaveValue('Something else')
+
+    await bar(page).getByRole('button', { name: 'Discard' }).click()
+    await modal.getByRole('button', { name: 'Discard' }).click()
+    await expect(page.getByLabel('Title')).toHaveValue(original)
+    await expectHidden(page)
+    expect(dialogs).toBe(0)
+})
+
+test('layout: the bar is centred on the content area and leaves room below the form', async ({ page }) => {
+    await openFirstPost(page)
+    await page.getByLabel('Title').fill('Dirty')
+    await expectVisible(page)
+    await page.waitForTimeout(400)
+
+    const barBox = await bar(page).boundingBox()
+    const mainBox = await page.locator('.fi-main').boundingBox()
+    const barCentre = barBox.x + barBox.width / 2
+    const mainCentre = mainBox.x + mainBox.width / 2
+    expect(Math.abs(barCentre - mainCentre)).toBeLessThan(4)
+
+    // The last element of the page can be scrolled clear of the bar.
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+    const lastButton = page.locator('.fi-page form').getByRole('button', { name: /^Save changes$/ })
+    await lastButton.scrollIntoViewIfNeeded()
+    const lastBox = await lastButton.boundingBox()
+    const barNow = await bar(page).boundingBox()
+    expect(lastBox.y + lastBox.height).toBeLessThanOrEqual(barNow.y + 1)
+})
+
+test.describe('mobile', () => {
+    test.use({ viewport: { width: 390, height: 800 } })
+
+    test('the bar spans the width and the leave modal buttons stack', async ({ page }) => {
+        await openFirstPost(page)
+        await page.getByLabel('Title').fill('Dirty')
+        await expectVisible(page)
+        await page.waitForTimeout(400)
+
+        const box = await bar(page).boundingBox()
+        expect(box.x).toBeLessThan(16)
+        expect(box.x + box.width).toBeGreaterThan(390 - 16)
+        await expect(bar(page).getByRole('button', { name: 'Save' })).toBeInViewport()
+        await expect(bar(page).getByRole('button', { name: 'Discard' })).toBeInViewport()
+        await page.screenshot({ path: '../../docs/images/mobile-bar.png' })
+
+        await page.locator('.fi-topbar-open-sidebar-btn').click()
+        await sidebarLink(page, 'Store settings').click()
+        await expect(leaveModal(page)).toBeVisible()
+        const keep = await leaveModal(page).getByRole('button', { name: 'Keep editing' }).boundingBox()
+        const save = await leaveModal(page).getByRole('button', { name: 'Save & leave' }).boundingBox()
+        expect(Math.abs(keep.x - save.x)).toBeLessThan(4)
+        expect(save.y).toBeGreaterThan(keep.y + keep.height - 1)
+        await page.screenshot({ path: '../../docs/images/mobile-leave-modal.png' })
+        await leaveModal(page).getByRole('button', { name: 'Keep editing' }).click()
+    })
+})

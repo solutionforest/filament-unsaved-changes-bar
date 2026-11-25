@@ -8,7 +8,7 @@ export default function unsavedChangesBar({
     hideFormActions = false,
     navigationGuard = 'modal',
     modalId = null,
-    discardConfirm = 'Discard all unsaved changes?',
+    discardModalId = null,
 } = {}) {
     return {
         isDirty: false,
@@ -22,6 +22,7 @@ export default function unsavedChangesBar({
         userInteracted: false,
         bypassGuard: false,
         pendingUrl: null,
+        pendingSpa: false,
         cleanups: [],
         timers: {},
 
@@ -59,16 +60,37 @@ export default function unsavedChangesBar({
                     event.preventDefault()
                     event.stopImmediatePropagation()
 
-                    if (navigationGuard === 'modal' && event.detail?.url) {
-                        this.pendingUrl = event.detail.url.toString()
-                        this.toggleModal(true)
-                    } else {
-                        this.shake()
-                    }
+                    this.requestLeave(event.detail?.url?.toString() ?? null, true)
                 }
                 window.addEventListener('livewire:navigate', onNavigate, true)
                 this.cleanups.push(() => window.removeEventListener('livewire:navigate', onNavigate, true))
             }
+
+            // Plain links (non-SPA panels do a full page load, so `livewire:navigate` never fires): intercept the click
+            // itself and show the same modal / shake. Links with `wire:navigate` are handled here too.
+            const onClick = (event) => {
+                if (this.bypassGuard || event.defaultPrevented || event.button !== 0) return
+                if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+
+                const anchor = event.target instanceof Element ? event.target.closest('a[href]') : null
+
+                if (!anchor || !this.isGuardedLink(anchor)) return
+
+                this.check()
+                if (!this.isDirty || this.hasRedirect()) return
+
+                event.preventDefault()
+                event.stopImmediatePropagation()
+                this.requestLeave(anchor.href, anchor.hasAttribute('wire:navigate') || [...anchor.attributes].some((a) => a.name.startsWith('wire:navigate')))
+            }
+            if (navigationGuard !== 'none') {
+                document.addEventListener('click', onClick, true)
+                this.cleanups.push(() => document.removeEventListener('click', onClick, true))
+            }
+
+            const onResize = () => this.syncLayout()
+            window.addEventListener('resize', onResize)
+            this.cleanups.push(() => window.removeEventListener('resize', onResize))
 
             // Tab close / reload: browsers only allow their native dialog.
             const onBeforeUnload = (event) => {
@@ -89,7 +111,8 @@ export default function unsavedChangesBar({
         destroy() {
             Object.values(this.timers).forEach(clearTimeout)
             this.cleanups.splice(0).forEach((cleanup) => cleanup())
-            document.body.classList.remove('fi-ucb-hide-actions')
+            document.body.classList.remove('fi-ucb-hide-actions', 'fi-ucb-visible')
+            document.documentElement.style.removeProperty('--fi-ucb-left')
         },
 
         debounce(key, callback, wait) {
@@ -108,7 +131,14 @@ export default function unsavedChangesBar({
         },
 
         serverHash() {
-            return this.$wire.unsavedChangesBarHash || this.$wire.savedDataHash || null
+            // Livewire's $wire returns a *function* for unknown properties, so only accept real, non-empty strings.
+            for (const name of ['unsavedChangesBarHash', 'savedDataHash']) {
+                const value = this.$wire[name]
+
+                if (typeof value === 'string' && value !== '') return value
+            }
+
+            return null
         },
 
         baseline() {
@@ -140,6 +170,22 @@ export default function unsavedChangesBar({
             this.isDirty = baseline !== null && !this.hasRedirect() && this.currentHash() !== baseline
 
             document.body.classList.toggle('fi-ucb-hide-actions', hideFormActions && this.isDirty)
+            document.body.classList.toggle('fi-ucb-visible', this.isDirty)
+            this.syncLayout()
+        },
+
+        // Centre the bar on the main content area (not the window, which is off-centre next to the sidebar).
+        syncLayout() {
+            const main = document.querySelector('.fi-main')
+
+            if (!this.isDirty || !main || window.innerWidth < 640) {
+                document.documentElement.style.removeProperty('--fi-ucb-left')
+
+                return
+            }
+
+            const rect = main.getBoundingClientRect()
+            document.documentElement.style.setProperty('--fi-ucb-left', `${rect.left + rect.width / 2}px`)
         },
 
         shake() {
@@ -151,8 +197,30 @@ export default function unsavedChangesBar({
             })
         },
 
-        toggleModal(open) {
-            window.dispatchEvent(new CustomEvent(open ? 'open-modal' : 'close-modal', { detail: { id: modalId } }))
+        isGuardedLink(anchor) {
+            if (anchor.target && anchor.target !== '_self') return false
+            if (anchor.hasAttribute('download')) return false
+
+            const url = new URL(anchor.href, window.location.href)
+
+            if (!['http:', 'https:'].includes(url.protocol) || url.origin !== window.location.origin) return false
+
+            // Same-page anchors and javascript-ish links aren't navigation.
+            return !(url.pathname === window.location.pathname && url.search === window.location.search && url.hash !== '')
+        },
+
+        requestLeave(url, spa) {
+            if (navigationGuard === 'modal' && url) {
+                this.pendingUrl = url
+                this.pendingSpa = spa
+                this.toggleModal(true)
+            } else {
+                this.shake()
+            }
+        },
+
+        toggleModal(open, id = modalId) {
+            window.dispatchEvent(new CustomEvent(open ? 'open-modal' : 'close-modal', { detail: { id } }))
         },
 
         keepEditing() {
@@ -163,11 +231,15 @@ export default function unsavedChangesBar({
 
         leave() {
             const url = this.pendingUrl
+            const spa = this.pendingSpa
             this.pendingUrl = null
             this.bypassGuard = true
             this.toggleModal(false)
 
-            if (url) window.Livewire.navigate(url)
+            if (!url) return
+
+            if (spa && window.Livewire?.navigate) window.Livewire.navigate(url)
+            else window.location.assign(url)
         },
 
         leaveWithoutSaving() {
@@ -175,10 +247,10 @@ export default function unsavedChangesBar({
         },
 
         async saveAndLeave() {
-            await this.save()
+            const saved = await this.save()
 
             // A validation error keeps the form dirty: stay, close the modal so the errors are visible.
-            if (this.isDirty) {
+            if (!saved) {
                 this.pendingUrl = null
                 this.toggleModal(false)
                 this.shake()
@@ -189,23 +261,44 @@ export default function unsavedChangesBar({
             this.leave()
         },
 
+        /** @returns {Promise<boolean>} whether the save went through without validation errors */
         async save() {
-            if (this.isSaving) return
+            if (this.isSaving) return false
 
             this.isSaving = true
+            let saved = false
 
             try {
                 await this.$wire[saveMethod]()
                 await this.$nextTick(() => {})
 
-                // Without a server-side hash, re-baseline after a save that raised no validation error.
-                if (this.serverHash() === null && !document.querySelector('[data-validation-error]')) {
+                saved = this.serverHash() === null
+                    ? !document.querySelector('[data-validation-error]')
+                    : !this.isDirtyAgainstServer()
+
+                // Without a server-side hash, re-baseline after a save that raised no validation error. Saving can
+                // re-render fields (uploads, editors), so take the baseline again once things have settled.
+                if (this.serverHash() === null && saved) {
                     this.localBaseline = this.currentHash()
+                    this.userInteracted = false
+                    this.debounce('rebase', () => {
+                        if (this.userInteracted) return
+                        this.localBaseline = this.currentHash()
+                        this.check()
+                    }, 500)
                 }
             } finally {
                 this.isSaving = false
                 this.check()
             }
+
+            return saved
+        },
+
+        isDirtyAgainstServer() {
+            this.check()
+
+            return this.isDirty && !this.hasRedirect()
         },
 
         async discard() {
@@ -227,10 +320,18 @@ export default function unsavedChangesBar({
                 return
             }
 
-            if (confirm(discardConfirm)) {
-                this.bypassGuard = true
-                window.location.reload()
-            }
+            // No server-side reset available: confirm in a Filament modal, then reload.
+            this.toggleModal(true, discardModalId)
+        },
+
+        confirmDiscardReload() {
+            this.bypassGuard = true
+            this.toggleModal(false, discardModalId)
+            window.location.reload()
+        },
+
+        cancelDiscard() {
+            this.toggleModal(false, discardModalId)
         },
     }
 }

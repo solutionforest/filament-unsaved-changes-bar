@@ -2,6 +2,7 @@
     use Filament\Support\Facades\FilamentAsset;
 
     $modalId = 'unsaved-changes-bar-leave';
+    $discardModalId = 'unsaved-changes-bar-discard';
 @endphp
 
 <div
@@ -14,7 +15,7 @@
         hideFormActions: @js($hideFormActions),
         navigationGuard: @js($navigationGuard),
         modalId: @js($modalId),
-        discardConfirm: @js(__('filament-unsaved-changes-bar::bar.discard_confirm')),
+        discardModalId: @js($discardModalId),
     })"
     class="fi-ucb-root"
     data-unsaved-changes-bar
@@ -88,4 +89,27 @@
             </x-slot>
         </x-filament::modal>
     @endif
+
+    @unless ($hasTrait)
+        {{-- Pages without the trait can't reset server-side: confirm, then reload. --}}
+        <x-filament::modal
+            :id="$discardModalId"
+            icon="heroicon-o-trash"
+            icon-color="danger"
+            :heading="__('filament-unsaved-changes-bar::bar.discard_heading')"
+            :description="__('filament-unsaved-changes-bar::bar.discard_description')"
+            width="md"
+            footer-actions-alignment="end"
+        >
+            <x-slot name="footerActions">
+                <x-filament::button color="gray" outlined x-on:click="cancelDiscard()" class="fi-ucb-modal-keep">
+                    {{ __('filament-unsaved-changes-bar::bar.cancel') }}
+                </x-filament::button>
+
+                <x-filament::button color="danger" x-on:click="confirmDiscardReload()" class="fi-ucb-modal-discard-confirm">
+                    {{ __('filament-unsaved-changes-bar::bar.discard') }}
+                </x-filament::button>
+            </x-slot>
+        </x-filament::modal>
+    @endunless
 </div>
