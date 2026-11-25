@@ -6,7 +6,7 @@
 
 ## v0.1.0
 
-First release. Filament 5 (Livewire 4), PHP 8.2+.
+First release. Filament 5 (Livewire 4), PHP 8.3+.
 
 - Floating "Unsaved changes · Discard · Save" bar, same dirty check as Filament's own unsaved-changes alert
 - Leave modal (Save & leave / Discard & leave / Keep editing) for link clicks, with or without SPA mode, and for the back/forward buttons; `NavigationGuard::Shake` as an alternative
