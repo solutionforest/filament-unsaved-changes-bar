@@ -1,10 +1,20 @@
 name: tests
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Runs on Solution Forest's self-hosted runners (Linux x64, with sudo for setup-php / Playwright deps).
+# Register one under Settings → Actions → Runners if the jobs sit in "Queued".
 jobs:
-  test:
-    runs-on: ubuntu-latest
+  pest:
+    runs-on: [self-hosted, linux]
     strategy:
       fail-fast: false
       matrix:
@@ -13,25 +23,79 @@ jobs:
         exclude:
           - php: '8.2'
             filament: '^5.0'
-    name: PHP ${{ matrix.php }} / Filament ${{ matrix.filament }}
+    name: Pest · PHP ${{ matrix.php }} · Filament ${{ matrix.filament }}
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          extensions: mbstring, intl, pdo_sqlite
+          extensions: mbstring, intl, pdo_sqlite, gd
           coverage: none
-      - run: composer require "filament/filament:${{ matrix.filament }}" -W --no-interaction --no-progress
+      - name: Install dependencies
+        run: composer require "filament/filament:${{ matrix.filament }}" -W --no-interaction --no-progress
       - run: composer test
 
   quality:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux]
+    name: Larastan + Pint
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
+          extensions: mbstring, intl, pdo_sqlite, gd
           coverage: none
       - run: composer update --no-interaction --no-progress
       - run: composer analyse
       - run: composer format -- --test
+
+  e2e:
+    runs-on: [self-hosted, linux]
+    strategy:
+      fail-fast: false
+      matrix:
+        filament: ['^4.0', '^5.0']
+    name: Browser (Playwright) · Filament ${{ matrix.filament }}
+    env:
+      DEMO_URL: http://127.0.0.1:8000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, intl, pdo_sqlite, gd
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: composer require "filament/filament:${{ matrix.filament }}" -W --no-interaction --no-progress
+      - name: Build and start the demo app
+        run: |
+          composer demo:build
+          PHP_CLI_SERVER_WORKERS=4 nohup vendor/bin/testbench serve --host=127.0.0.1 --port=8000 > demo-server.log 2>&1 &
+          echo $! > demo-server.pid
+          for i in $(seq 1 30); do curl -fsS -o /dev/null "$DEMO_URL/admin/login" && exit 0; sleep 1; done
+          cat demo-server.log; exit 1
+      - name: Install Playwright
+        working-directory: demo/e2e
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install chromium
+      - name: Run browser tests
+        working-directory: demo/e2e
+        env:
+          CI: true
+        run: npx playwright test
+      - name: Stop the demo app
+        if: always()
+        run: kill "$(cat demo-server.pid)" || true
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report-${{ strategy.job-index }}
+          path: |
+            demo/e2e/playwright-report
+            demo/e2e/test-results
+            demo-server.log
+          retention-days: 7
