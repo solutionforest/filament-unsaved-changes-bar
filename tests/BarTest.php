@@ -230,7 +230,24 @@ it('tracks several state paths with one hash over {path: value}', function () {
     $page->call('discardChanges');
     expect($page->get('notificationsData.email_digest'))->toBeTrue();
 
-    $page->set('profileData.name', 'Someone else')->call('save');
+    $page->set('profileData.name', 'Someone else')->call('saveUnsavedChangesBar');
     expect($page->get('unsavedChangesBarHash'))->not->toBe($baseline);
     cache()->forget('demo.preferences.profile');
+});
+
+it('saves nothing and shows every error when one of several forms is invalid', function () {
+    cache()->forget('demo.preferences.profile');
+    cache()->forget('demo.preferences.notifications');
+
+    $page = Livewire::test(Preferences::class);
+    $baseline = $page->get('unsavedChangesBarHash');
+
+    $page->set('profileData.name', '')->set('notificationsData.email_digest', false)
+        ->call('saveUnsavedChangesBar')
+        ->assertHasErrors(['profileData.name' => 'required']);
+
+    expect(cache('demo.preferences.notifications'))->toBeNull() // the valid form wasn't saved either
+        ->and($page->get('unsavedChangesBarHash'))->toBe($baseline);
+
+    expect(Preferences::getUnsavedChangesBarSaveMethod())->toBe('saveUnsavedChangesBar');
 });

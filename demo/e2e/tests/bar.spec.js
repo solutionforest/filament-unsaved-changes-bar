@@ -387,3 +387,14 @@ test('browser back button in SPA mode opens the leave modal and keeps the URL', 
     await leaveModal(page).getByRole('button', { name: 'Discard & leave' }).click()
     await page.waitForURL('**/admin/posts')
 })
+
+test('page with two forms: an invalid form blocks the save and the bar stays', async ({ page }) => {
+    await page.goto('/admin/preferences')
+    await page.waitForTimeout(800)
+
+    await page.getByLabel('Name').fill('')
+    await page.getByLabel('Weekly email digest').click()
+    await bar(page).getByRole('button', { name: 'Save' }).click()
+    await expect(page.getByText('The name field is required.')).toBeVisible()
+    await expectVisible(page)
+})

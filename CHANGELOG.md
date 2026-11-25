@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.2.0
+
+- Pages with several forms: the bar's Save now validates every form first, persists through `persistUnsavedChangesBar(array $states)` in one DB transaction and refreshes the baseline. Replaces calling `rememberUnsavedChangesBarData()` from your own save method on those pages.
+
 ## v0.1.0
 
 First release. Filament 5 (Livewire 4), PHP 8.2+.

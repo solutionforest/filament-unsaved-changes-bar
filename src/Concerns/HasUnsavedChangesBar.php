@@ -2,7 +2,12 @@
 
 namespace SolutionForest\FilamentUnsavedChangesBar\Concerns;
 
+use BadMethodCallException;
 use Filament\Resources\Pages\CreateRecord;
+use Filament\Schemas\Schema;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
 
 /**
@@ -83,8 +88,69 @@ trait HasUnsavedChangesBar
         }
     }
 
+    /**
+     * Pages with several tracked forms save through saveUnsavedChangesBar(); single-form pages keep save() / create().
+     */
     public static function getUnsavedChangesBarSaveMethod(): string
     {
+        if (count(static::getUnsavedChangesBarStatePaths()) > 1) {
+            return 'saveUnsavedChangesBar';
+        }
+
         return is_a(static::class, CreateRecord::class, true) ? 'create' : 'save';
+    }
+
+    /**
+     * Save for pages with several forms: validate every form first (so one failure saves nothing and all errors
+     * show), then persist everything in one transaction, then refresh the baseline.
+     */
+    public function saveUnsavedChangesBar(): void
+    {
+        $failure = null;
+
+        foreach (static::getUnsavedChangesBarStatePaths() as $path) {
+            try {
+                $this->getUnsavedChangesBarForm($path)->validate();
+            } catch (ValidationException $exception) {
+                $failure = $exception;
+            }
+        }
+
+        if ($failure !== null) {
+            throw $failure;
+        }
+
+        $states = [];
+
+        foreach (static::getUnsavedChangesBarStatePaths() as $path) {
+            $states[$path] = $this->getUnsavedChangesBarForm($path)->getState();
+        }
+
+        DB::transaction(fn () => $this->persistUnsavedChangesBar($states));
+
+        $this->rememberUnsavedChangesBarData();
+    }
+
+    /**
+     * Write the validated state of every tracked form. Implement this on pages with several forms.
+     *
+     * @param  array<string, array<string, mixed>>  $states  keyed by state path, e.g. ['profileData' => [...]]
+     */
+    protected function persistUnsavedChangesBar(array $states): void
+    {
+        throw new BadMethodCallException(static::class.' tracks several forms and must implement persistUnsavedChangesBar().');
+    }
+
+    /**
+     * Form name for a state path: `profileData` → `profileForm`, `data` → `form`. Override for other conventions.
+     */
+    protected function getUnsavedChangesBarFormName(string $path): string
+    {
+        return $path === 'data' ? 'form' : Str::beforeLast($path, 'Data').'Form';
+    }
+
+    private function getUnsavedChangesBarForm(string $path): Schema
+    {
+        return $this->{$this->getUnsavedChangesBarFormName($path)};
     }
 }
