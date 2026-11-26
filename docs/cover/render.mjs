@@ -1,4 +1,5 @@
-// Renders cover.html to docs/images/cover.png (1280×640 @2x) and docs/images/cover-filament.png (2560×1440).
+// Renders cover.html to docs/images/cover.png (1280×640 @2x) and docs/images/cover-filament.png (2560×1440),
+// and social.html to docs/images/social-preview.png (1280×640).
 // Run from the package root after `cd demo/e2e && npm ci`: node docs/cover/render.mjs
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
@@ -22,5 +23,11 @@ await dir.goto(url)
 await dir.addStyleTag({ content: 'body{height:720px} .left{top:114px} .chips{top:492px} .win{top:124px} .modal{top:358px} .foot{bottom:52px}' })
 await dir.evaluate(() => document.fonts.ready)
 await dir.screenshot({ path: path.join(here, '../images/cover-filament.png') })
+
+// GitHub social preview: 1280×640 (GitHub's recommended size, well under its 1 MB limit).
+const social = await browser.newPage({ viewport: { width: 1280, height: 640 }, deviceScaleFactor: 1 })
+await social.goto('file://' + path.join(here, 'social.html'))
+await social.evaluate(() => document.fonts.ready)
+await social.screenshot({ path: path.join(here, '../images/social-preview.png') })
 
 await browser.close()

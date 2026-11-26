@@ -1,0 +1,37 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<!-- Source for docs/images/social-preview.png (GitHub social preview, 1280×640). Re-render: node docs/cover/render.mjs -->
+<style>
+@font-face { font-family: Inter; src: url(inter.woff2) format('woff2'); font-weight: 100 900; }
+* { box-sizing: border-box; margin: 0; }
+body { width: 1280px; height: 640px; overflow: hidden; font-family: Inter, sans-serif; color: #fff; position: relative;
+  background: radial-gradient(760px 420px at 50% 100%, #3a2a10 0%, rgba(14,15,19,0) 70%), #0e0f13;
+  display: flex; flex-direction: column; align-items: center; text-align: center; }
+body::before { content: ''; position: absolute; inset: 0; opacity: .35;
+  background-image: radial-gradient(rgba(255,255,255,.12) 1px, transparent 1px); background-size: 24px 24px; }
+.tag { margin-top: 118px; display: inline-flex; align-items: center; gap: 10px; padding: 9px 18px; border-radius: 999px;
+  border: 1px solid #3a3222; background: #1a1710; font-size: 14px; font-weight: 700; letter-spacing: .14em; color: #fcd9a0; position: relative; }
+.tag i { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; display: block; }
+h1 { margin-top: 28px; font-size: 72px; line-height: 1.02; font-weight: 800; letter-spacing: -0.035em; position: relative; }
+h1 span { background: linear-gradient(90deg, #fbbf24, #f59e0b 50%, #f97316); -webkit-background-clip: text; color: transparent; }
+p { margin-top: 20px; font-size: 24px; color: #c9cbd3; position: relative; }
+.pill { position: relative; margin-top: 56px; display: flex; align-items: center; gap: 14px; padding: 13px 13px 13px 22px; border-radius: 16px;
+  background: #fff; color: #111827; font-size: 20px; font-weight: 600; white-space: nowrap;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.1), 0 30px 60px -12px rgba(245,158,11,.35), 0 20px 40px -10px rgba(0,0,0,.6); }
+.dot { width: 24px; height: 24px; border-radius: 50%; background: #f59e0b; color: #fff; font-size: 15px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+.btn { padding: 10px 20px; border-radius: 10px; font-size: 18px; font-weight: 600; }
+.discard { box-shadow: 0 0 0 1px #d1d5db; color: #374151; margin-left: 14px; }
+.save { background: #f59e0b; color: #fff; }
+.foot { position: absolute; bottom: 44px; left: 0; right: 0; font-size: 15px; color: #8b8f9c; }
+</style>
+</head>
+<body>
+  <div class="tag"><i></i>FILAMENT 5 PLUGIN · SOLUTION FOREST</div>
+  <h1>Filament Unsaved <span>Changes Bar</span></h1>
+  <p>Shopify-style save bar and a “leave without saving?” modal for your forms.</p>
+  <div class="pill"><span class="dot">!</span>Unsaved changes<span class="btn discard">Discard</span><span class="btn save">Save</span></div>
+  <div class="foot">github.com/solutionforest/filament-unsaved-changes-bar</div>
+</body>
+</html>
