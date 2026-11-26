@@ -3,7 +3,8 @@
 ![Filament Unsaved Changes Bar](docs/images/cover.png)
 
 [![tests](https://github.com/solutionforest/filament-unsaved-changes-bar/actions/workflows/tests.yml/badge.svg)](https://github.com/solutionforest/filament-unsaved-changes-bar/actions/workflows/tests.yml)
-[![Latest release](https://img.shields.io/github/v/release/solutionforest/filament-unsaved-changes-bar?label=release)](https://github.com/solutionforest/filament-unsaved-changes-bar/releases)
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/solutionforest/filament-unsaved-changes-bar.svg)](https://packagist.org/packages/solutionforest/filament-unsaved-changes-bar)
+[![Total Downloads](https://img.shields.io/packagist/dt/solutionforest/filament-unsaved-changes-bar.svg)](https://packagist.org/packages/solutionforest/filament-unsaved-changes-bar)
 [![PHPStan level 10](https://img.shields.io/badge/PHPStan-level%2010-2a5ea7?logo=php&logoColor=white)](phpstan.neon.dist)
 [![Code style: Pint](https://img.shields.io/badge/code%20style-pint-f05340)](https://laravel.com/docs/pint)
 [![Tested with Pest](https://img.shields.io/badge/tested%20with-Pest-c026d3)](https://pestphp.com)
