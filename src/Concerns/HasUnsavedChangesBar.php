@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
+use LogicException;
 
 /**
  * Optional trait for pages shown with the unsaved-changes bar.
@@ -48,9 +49,15 @@ trait HasUnsavedChangesBar
         $paths = static::getUnsavedChangesBarStatePaths();
 
         // One form: exactly Filament's own hash. Several forms: the same formula over {path: value}.
-        $state = count($paths) === 1
-            ? $this->{$paths[0]}
-            : collect($paths)->mapWithKeys(fn (string $path): array => [$path => $this->{$path}])->all();
+        if (count($paths) === 1) {
+            $state = $this->{$paths[0]};
+        } else {
+            $state = [];
+
+            foreach ($paths as $path) {
+                $state[$path] = $this->{$path};
+            }
+        }
 
         $this->unsavedChangesBarHash = md5(str_replace('\\', '', (string) json_encode($state, JSON_UNESCAPED_UNICODE)));
     }
@@ -151,6 +158,13 @@ trait HasUnsavedChangesBar
 
     private function getUnsavedChangesBarForm(string $path): Schema
     {
-        return $this->{$this->getUnsavedChangesBarFormName($path)};
+        $name = $this->getUnsavedChangesBarFormName($path);
+        $form = $this->{$name};
+
+        if (! $form instanceof Schema) {
+            throw new LogicException(static::class." has no form named [{$name}] for the state path [{$path}]. Override getUnsavedChangesBarFormName().");
+        }
+
+        return $form;
     }
 }

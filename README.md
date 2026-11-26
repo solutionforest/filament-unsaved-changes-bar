@@ -4,6 +4,10 @@
 
 [![tests](https://github.com/solutionforest/filament-unsaved-changes-bar/actions/workflows/tests.yml/badge.svg)](https://github.com/solutionforest/filament-unsaved-changes-bar/actions/workflows/tests.yml)
 [![Latest release](https://img.shields.io/github/v/release/solutionforest/filament-unsaved-changes-bar?label=release)](https://github.com/solutionforest/filament-unsaved-changes-bar/releases)
+[![PHPStan level 10](https://img.shields.io/badge/PHPStan-level%2010-2a5ea7?logo=php&logoColor=white)](phpstan.neon.dist)
+[![Code style: Pint](https://img.shields.io/badge/code%20style-pint-f05340)](https://laravel.com/docs/pint)
+[![Tested with Pest](https://img.shields.io/badge/tested%20with-Pest-c026d3)](https://pestphp.com)
+[![Browser tests: Playwright](https://img.shields.io/badge/browser%20tests-Playwright-2ead33?logo=playwright&logoColor=white)](demo/e2e)
 [![License](https://img.shields.io/github/license/solutionforest/filament-unsaved-changes-bar)](LICENSE.md)
 [![PHP](https://img.shields.io/badge/php-8.3%2B-777bb4)](composer.json)
 [![Filament](https://img.shields.io/badge/filament-5.x-fdae4b)](https://filamentphp.com)
@@ -270,14 +274,14 @@ composer demo            # → http://127.0.0.1:8000/admin  (demo@example.com / 
 composer demo:octane     # same app, served by Laravel Octane (Swoole)
 
 composer test            # Pest
-composer analyse         # Larastan
+composer analyse         # Larastan (PHPStan level 10)
 composer format          # Pint
 ```
 
 CI (`.github/workflows/tests.yml`) runs on GitHub-hosted runners. It runs:
 
 - Pest on PHP 8.3–8.4,
-- Larastan and Pint, and
+- Larastan (PHPStan level 10) and Pint, and
 - the Playwright browser tests against the demo, served by both `php artisan serve` and Octane (Swoole).
 
 ## License

@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.2.2
+
+- Static analysis raised to PHPStan level 10 (max). Misconfigured pages now fail with a clear `LogicException` (e.g. `getUnsavedChangesBarStatePaths()` returning a non-list, or a state path without a matching form) instead of a PHP type error.
+- README: PHPStan, Pint, Pest and Playwright badges.
+
 ## v0.2.1
 
 - Requires PHP 8.3+ (the Filament 5 / Livewire 4 dependency set doesn't install on PHP 8.2).

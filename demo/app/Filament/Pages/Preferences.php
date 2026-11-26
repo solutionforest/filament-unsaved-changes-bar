@@ -36,6 +36,9 @@ class Preferences extends Page implements HasForms
     /** @var array<string, mixed>|null */
     public ?array $notificationsData = [];
 
+    /**
+     * @return non-empty-array<int, string>
+     */
     public static function getUnsavedChangesBarStatePaths(): array
     {
         return ['profileData', 'notificationsData'];
@@ -48,8 +51,31 @@ class Preferences extends Page implements HasForms
 
     protected function fillUnsavedChangesBarForms(): void
     {
-        $this->profileForm->fill(cache('demo.preferences.profile', ['name' => 'Demo user', 'timezone' => 'Asia/Hong_Kong']));
-        $this->notificationsForm->fill(cache('demo.preferences.notifications', ['email_digest' => true]));
+        $this->profileForm->fill($this->stored('demo.preferences.profile', ['name' => 'Demo user', 'timezone' => 'Asia/Hong_Kong']));
+        $this->notificationsForm->fill($this->stored('demo.preferences.notifications', ['email_digest' => true]));
+    }
+
+    /**
+     * @param  array<string, mixed>  $default
+     * @return array<string, mixed>
+     */
+    private function stored(string $key, array $default): array
+    {
+        $value = cache($key);
+
+        if (! is_array($value)) {
+            return $default;
+        }
+
+        $state = [];
+
+        foreach ($value as $field => $fieldValue) {
+            if (is_string($field)) {
+                $state[$field] = $fieldValue;
+            }
+        }
+
+        return $state;
     }
 
     public function profileForm(Schema $schema): Schema

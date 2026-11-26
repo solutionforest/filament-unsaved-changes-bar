@@ -7,6 +7,7 @@ use Filament\Panel;
 use Filament\Resources\Pages\CreateRecord;
 use Filament\Resources\Pages\EditRecord;
 use Filament\View\PanelsRenderHook;
+use LogicException;
 use ReflectionClass;
 use SolutionForest\FilamentUnsavedChangesBar\Concerns\HasUnsavedChangesBar;
 use SolutionForest\FilamentUnsavedChangesBar\Enums\BarPosition;
@@ -33,13 +34,24 @@ class UnsavedChangesBarPlugin implements Plugin
 
     public static function make(): static
     {
-        return app(static::class);
+        $plugin = app(static::class);
+
+        if (! $plugin instanceof static) {
+            throw new LogicException('The container did not resolve ['.static::class.'].');
+        }
+
+        return $plugin;
     }
 
     public static function get(): static
     {
-        /** @var static */
-        return filament(app(static::class)->getId());
+        $plugin = filament(static::make()->getId());
+
+        if (! $plugin instanceof static) {
+            throw new LogicException('The current panel does not register ['.static::class.'].');
+        }
+
+        return $plugin;
     }
 
     public function getId(): string
@@ -151,7 +163,8 @@ class UnsavedChangesBarPlugin implements Plugin
     {
         $panel->renderHook(
             PanelsRenderHook::PAGE_END,
-            fn (array $scopes = []): string => $this->renderFor($scopes[0] ?? null),
+            /** @param  array<int, mixed>  $scopes */
+            fn (array $scopes = []): string => $this->renderFor(is_string($scopes[0] ?? null) ? $scopes[0] : null),
         );
     }
 
@@ -197,13 +210,39 @@ class UnsavedChangesBarPlugin implements Plugin
      */
     public function getStatePaths(string $page): array
     {
-        return method_exists($page, 'getUnsavedChangesBarStatePaths') ? $page::getUnsavedChangesBarStatePaths() : ['data'];
+        if (! method_exists($page, 'getUnsavedChangesBarStatePaths')) {
+            return ['data'];
+        }
+
+        $paths = $page::getUnsavedChangesBarStatePaths();
+
+        if (! is_array($paths) || $paths === []) {
+            throw new LogicException("{$page}::getUnsavedChangesBarStatePaths() must return a non-empty list of property names.");
+        }
+
+        $valid = [];
+
+        foreach ($paths as $path) {
+            if (! is_string($path) || $path === '') {
+                throw new LogicException("{$page}::getUnsavedChangesBarStatePaths() must only contain property names.");
+            }
+
+            $valid[] = $path;
+        }
+
+        return $valid;
     }
 
     public function getSaveMethod(string $page): string
     {
         if (method_exists($page, 'getUnsavedChangesBarSaveMethod')) {
-            return $page::getUnsavedChangesBarSaveMethod();
+            $method = $page::getUnsavedChangesBarSaveMethod();
+
+            if (! is_string($method) || $method === '') {
+                throw new LogicException("{$page}::getUnsavedChangesBarSaveMethod() must return a method name.");
+            }
+
+            return $method;
         }
 
         return is_a($page, CreateRecord::class, true) ? 'create' : 'save';
@@ -211,7 +250,7 @@ class UnsavedChangesBarPlugin implements Plugin
 
     public function renderFor(?string $page): string
     {
-        if (! $this->isPageEligible($page)) {
+        if ($page === null || ! $this->isPageEligible($page)) {
             return '';
         }
 
