@@ -218,6 +218,23 @@ If your save method has another name, override `public static function getUnsave
 
 ![Custom settings page](docs/images/custom-page.png)
 
+## Compared with Filament's `->unsavedChangesAlerts()`
+
+Filament panels can already warn about unsaved changes with `->unsavedChangesAlerts()`. That option is a **warning only**. This plugin adds a save bar and replaces the warning with a Filament-style modal. Both use the same check to decide whether the form has changed.
+
+| | `->unsavedChangesAlerts()` | This plugin |
+|---|---|---|
+| Shows that the form has unsaved changes while editing | No | Floating bar |
+| Save / Discard without scrolling to the form buttons | No | Yes, plus Ctrl/⌘+S |
+| Leaving through a link (SPA mode) | Browser `confirm()` (OK / Cancel) | Modal: Save & leave / Discard & leave / Keep editing |
+| Leaving through a link (no SPA mode) | Browser "Leave site?" dialog | The same modal |
+| Back / forward button (SPA mode) | Browser `confirm()` | The same modal |
+| Closing the tab or reloading | Browser "Leave site?" dialog | Browser "Leave site?" dialog |
+| Tab close while an action modal has unsaved input | Warns | Not covered |
+| Panel setting required | Yes | No |
+
+You can use both. When both are on, the plugin handles navigation first and Filament's `confirm()` doesn't appear, so users are asked only once. Keep `->unsavedChangesAlerts()` on as well if you want the warning for action modals.
+
 ## How it works
 
 - **Server.** The trait stores `md5(json_encode($data))`, the same formula Filament's `HasUnsavedDataChangesAlert` uses. It refreshes the hash when Filament calls `rememberData()` after a successful save. A failed validation leaves the hash unchanged, so the bar stays visible.
@@ -230,7 +247,7 @@ If your save method has another name, override `public static function getUnsave
 The bar tracks the page's main form (`$data`). Other components on the page don't need it:
 
 - **Relation manager and table actions save immediately.** Create, edit and delete in a relation manager are written to the database when the action is submitted. There is never an "unsaved" state at page level.
-- **Action modals cover the page.** While a modal is open you can't click the sidebar, and Filament already warns on tab close when an action modal is open.
+- **Action modals cover the page.** While a modal is open you can't click the sidebar. For a warning on tab close while an action modal is open, also enable Filament's `->unsavedChangesAlerts()` (see above).
 - **If a relation should be part of the bar's Save, put it in the main form.** Use `Repeater::make('items')->relationship()`, or `Select::make('tags')->relationship()->multiple()`. The relation then lives in `$data`, the bar tracks it, and **Save** saves it together with the record. The demo's Highlights repeater shows this nested-array case.
 
 ## Limitations
