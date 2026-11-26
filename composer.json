@@ -23,12 +23,13 @@
     },
     "require-dev": {
         "larastan/larastan": "^3.0",
+        "laravel/octane": "^2.6",
         "laravel/pint": "^1.14",
         "orchestra/testbench": "^9.5|^10.0|^11.0",
         "pestphp/pest": "^3.0|^4.0",
         "pestphp/pest-plugin-laravel": "^3.0|^4.0",
         "phpstan/phpstan-deprecation-rules": "^2.0",
-        "laravel/octane": "^2.6"
+        "shipfastlabs/pun": "^0.4.4"
     },
     "autoload": {
         "psr-4": {
@@ -59,6 +60,10 @@
             "Composer\\Config::disableProcessTimeout",
             "@demo:build",
             "@php vendor/bin/testbench octane:start --server=swoole --host=127.0.0.1 --port=8000 --ansi"
+        ],
+        "pun": [
+            "vendor/bin/pun format --test",
+            "vendor/bin/pun lint"
         ]
     },
     "config": {

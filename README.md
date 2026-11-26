@@ -7,6 +7,7 @@
 [![Total Downloads](https://img.shields.io/packagist/dt/solutionforest/filament-unsaved-changes-bar.svg)](https://packagist.org/packages/solutionforest/filament-unsaved-changes-bar)
 [![PHPStan level 10](https://img.shields.io/badge/PHPStan-level%2010-2a5ea7?logo=php&logoColor=white)](phpstan.neon.dist)
 [![Code style: Pint](https://img.shields.io/badge/code%20style-pint-f05340)](https://laravel.com/docs/pint)
+[![Linted with Pun](https://img.shields.io/badge/linted%20with-Pun-7c3aed)](https://github.com/shipfastlabs/pun)
 [![Tested with Pest](https://img.shields.io/badge/tested%20with-Pest-c026d3)](https://pestphp.com)
 [![Browser tests: Playwright](https://img.shields.io/badge/browser%20tests-Playwright-2ead33?logo=playwright&logoColor=white)](demo/e2e)
 [![License](https://img.shields.io/github/license/solutionforest/filament-unsaved-changes-bar)](LICENSE.md)
@@ -277,12 +278,13 @@ composer demo:octane     # same app, served by Laravel Octane (Swoole)
 composer test            # Pest
 composer analyse         # Larastan (PHPStan level 10)
 composer format          # Pint
+composer pun             # Pun (format check + lint)
 ```
 
 CI (`.github/workflows/tests.yml`) runs on GitHub-hosted runners. It runs:
 
 - Pest on PHP 8.3–8.4,
-- Larastan (PHPStan level 10) and Pint, and
+- Larastan (PHPStan level 10), Pint and [Pun](https://github.com/shipfastlabs/pun) (format check + lint), and
 - the Playwright browser tests against the demo, served by both `php artisan serve` and Octane (Swoole).
 
 ## License
