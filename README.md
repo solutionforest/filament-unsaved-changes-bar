@@ -1,5 +1,7 @@
 # Filament Unsaved Changes Bar
 
+![Filament Unsaved Changes Bar](docs/images/cover.png)
+
 [![tests](https://github.com/solutionforest/filament-unsaved-changes-bar/actions/workflows/tests.yml/badge.svg)](https://github.com/solutionforest/filament-unsaved-changes-bar/actions/workflows/tests.yml)
 [![Latest release](https://img.shields.io/github/v/release/solutionforest/filament-unsaved-changes-bar?label=release)](https://github.com/solutionforest/filament-unsaved-changes-bar/releases)
 [![License](https://img.shields.io/github/license/solutionforest/filament-unsaved-changes-bar)](LICENSE.md)
