@@ -1,0 +1,42 @@
+# Pun (https://github.com/shipfastlabs/pun) runs the formatter and linter: `composer pun`.
+# Static analysis stays on Larastan (`composer analyse`, PHPStan level 10): Pun's analyser is pre-1.0 and
+# doesn't understand Laravel package views or this plugin's fluent state yet (false positives on v0.4.4).
+[extensions]
+laravel = "on"
+pest = "on"
+phpunit = "on"
+carbon = "on"
+mockery = "on"
+
+[format]
+preset = "laravel"
+
+[lint.rules]
+"refactor/rename-phpdoc-tag" = "error"
+"functions/no-unused-closure-use" = "error"
+"style/no-alias-function" = "error"
+"statements/no-empty" = "error"
+"phpdoc/no-superfluous-tags" = { allow-mixed = true, allow-unused-params = true }
+"functions/no-unreachable-default-argument-value" = "error"
+"imports/no-unused" = "error"
+"control-flow/no-useless-return" = "error"
+"style/require-ordered-traits" = "error"
+"phpunit/require-method-casing" = { case = "snake-case" }
+"phpunit/require-protected-setup" = "error"
+"phpdoc/no-access" = "error"
+"phpdoc/no-package" = "error"
+"phpdoc/no-useless-inheritdoc" = "error"
+"classes/prefer-self-in-final" = "error"
+"complexity/no-redundant-nullsafe" = "off"
+"dead-code/no-duplicate-array-key" = "off"
+"dead-code/no-unreachable-code" = "off"
+"dead-code/no-unused-constructor-param" = "off"
+"dead-code/no-unused-expression" = "off"
+"dead-code/no-unused-private-constant" = "off"
+"dead-code/no-unused-private-method" = "off"
+"laravel/no-useless-value-call" = "off"
+"laravel/no-useless-with-call" = "off"
+
+[[lint.overrides]]
+files = ["src", "demo/app"]
+rules = { "complexity/no-redundant-nullsafe" = "error", "dead-code/no-duplicate-array-key" = "error", "dead-code/no-unreachable-code" = "error", "dead-code/no-unused-constructor-param" = "error", "dead-code/no-unused-expression" = "error", "dead-code/no-unused-private-constant" = "error", "dead-code/no-unused-private-method" = "error", "laravel/no-useless-value-call" = "error", "laravel/no-useless-with-call" = "error" }
