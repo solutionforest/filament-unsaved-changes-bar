@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.2.1
+
+- Requires PHP 8.3+ (the Filament 5 / Livewire 4 dependency set doesn't install on PHP 8.2).
+- Dropped the unused `pestphp/pest-plugin-livewire` dev dependency.
+- Full MIT license text, so GitHub and Packagist detect the license.
+- CI runs on GitHub-hosted runners.
+- Docs: cover and social preview images, badges, and a comparison with Filament's `->unsavedChangesAlerts()`.
+
 ## v0.2.0
 
 - Pages with several forms: the bar's Save now validates every form first, persists through `persistUnsavedChangesBar(array $states)` in one DB transaction and refreshes the baseline. Replaces calling `rememberUnsavedChangesBarData()` from your own save method on those pages.
