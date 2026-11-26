@@ -265,4 +265,4 @@ CI (`.github/workflows/tests.yml`) runs on GitHub-hosted runners. It runs:
 
 ## License
 
-MIT. See [LICENSE.md](LICENSE.md).
+Released under the [MIT License](LICENSE.md). Free to use, modify and distribute, including in commercial projects.
